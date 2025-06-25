@@ -1,35 +1,57 @@
+import React from 'react';
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import './App.css'
+import { ToastContainer } from "react-toastify";
+import injectContext from "./store/appContext.jsx";
+import Navbar from './components/Navbar.jsx';
+import StartPage from './components/StartPage.jsx';
+import WhatsAppButton from "./components/WhatsappButton.jsx";
 
-function App() {
-  const [count, setCount] = useState(0)
+const AppContent = () => {
+  const location = useLocation();
+
+  //Esto sirve para ocultar ciertas rutas y que no se muestre el footer por ejemplo
+  const hideLayout = location.pathname === "/" ||
+  location.pathname === "/home";
+
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <Routes>
+        <Route path="/" element={<StartPage />} />
+        {/* <Route path="/home" element={<ListPaddel />} /> */}
+      </Routes>
+      {/* <WhatsAppButton /> */}
+      {!hideLayout && <Footer />}
+
+      {/* Para alertas y notificaciones de la app */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        pauseOnHover
+        draggable
+      />
     </>
-  )
+  );
+};
+
+// 2️⃣ Ahora envolvemos ese component con nuestro HOC de Flux/Context:
+const AppContentWithFlux = injectContext(AppContent);
+
+function App() {
+  return (
+    <div className="App">
+        <Router>
+          <AppContentWithFlux />
+        </Router>
+    </div>
+  );
 }
 
-export default App
+export default App;
