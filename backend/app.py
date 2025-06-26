@@ -165,7 +165,9 @@ def eliminar_usuario(email):
 @app.route('/usuario/telefono/<string:telefono>', methods=['GET'])
 def verificar_telefono(telefono):
     # Verificamos si el teléfono ya existe
-    usuario = Usuario.query.filter_by(telefono=telefono).first()
+
+    numero = telefono.replace('whatsapp:', '')  # Normalizamos el número eliminando el '+'
+    usuario = Usuario.query.filter_by(telefono=numero).first()
     
     if usuario:
         return jsonify({'existe': True, 'usuario': usuario.serialize()}), 200
