@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import String, Integer, Date, Time, ForeignKey, Boolean, Float
 from datetime import date, time
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, backref
 from sqlalchemy import LargeBinary
 import uuid
 
@@ -32,16 +32,15 @@ class Usuario(db.Model):
 class Tarea(db.Model):
     __tablename__ = 'tarea'
 
-    idTarea = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    titulo = db.Column(db.String(120), nullable=False)
-    fecha = db.Column(db.Date, nullable=False)
-    horaInicio = db.Column(db.Time, nullable=False)
-    horaFin = db.Column(db.Time, nullable=False)
-    etiqueta = db.Column(db.String(50), nullable=False)  # Trabajo, Personal, etc.
-    idUsuario = db.Column(db.Integer, db.ForeignKey('usuario.idUsuario'), nullable=False)
+    idTarea: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    titulo: Mapped[str] = mapped_column(String(120), nullable=False)
+    fecha: Mapped[date] = mapped_column(Date, nullable=False)
+    horaInicio: Mapped[time] = mapped_column(Time, nullable=False)
+    horaFin: Mapped[time] = mapped_column(Time, nullable=False)
+    etiqueta: Mapped[str] = mapped_column(String(50), nullable=False)
+    idUsuario: Mapped[int] = mapped_column(Integer, ForeignKey('usuario.idUsuario'), nullable=False)
     
-    # Relación con Usuario
-    usuario = db.relationship('Usuario', backref=db.backref('tareas', lazy=True))
+    usuario = relationship('Usuario', backref=backref('tareas', lazy=True))
     
     def serialize(self):
         return {

@@ -18,7 +18,9 @@ const AppContent = () => {
 
   useEffect(() => {
     // Al montar el componente principal
-    actions.restoreSession();
+    const { success } = actions.restoreSession();
+    // 2) Si hay token, bajar tareas
+    if (success) actions.getTasks();
   }, []);
 
   //Esto sirve para ocultar ciertas rutas y que no se muestre el footer por ejemplo

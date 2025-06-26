@@ -30,10 +30,10 @@ export default function Home() {
 
     // Cargar tareas al montar el componente
     useEffect(() => {
-      if (store.user) {
+      if (store.token) {
         actions.getTasks();
       }
-    }, [store.user]);
+    }, [store.token]);
 
     // Convertir tareas a eventos para el calendario
     useEffect(() => {
@@ -53,7 +53,6 @@ export default function Home() {
       setEvents(newEvents);
     }, [store.tasks]);
 
-
   //---------------------------------------------------------------------------------------------------------------------------
 
   const openModal = (dateStr = null) => {
@@ -64,6 +63,8 @@ export default function Home() {
   const closeModal = () => setModalOpen(false);
 
   const handleSave = async (taskData) => {
+
+    console.log('Datos de la tarea a guardar:', taskData);
 
     const savedTask = await actions.createTask({
       titulo: taskData.title,
@@ -77,6 +78,7 @@ export default function Home() {
     
     if (savedTask.success) {
       closeModal();
+      actions.getTasks(); // Actualizar tareas después de guardar
       success('Tarea agregada correctamente');
     } else {
       error('Error al guardar tarea');
@@ -91,9 +93,19 @@ export default function Home() {
         <div className="toast-actions">
           <button 
             className="toast-btn toast-btn-confirm"
-            onClick={() => {
-              actions.deleteTask(Number(info.event.id));
+            onClick={ async() => {
+              let result = await actions.deleteTask(Number(info.event.id));
+
+              if (!result.success) {
+                error('Error al eliminar la tarea');
+                return;
+              }
+
+              // Actualizar tareas después de eliminar
+              actions.getTasks();
               toast.dismiss();
+              success('Tarea eliminada correctamente');
+              
             }}
           >
             Sí

@@ -182,51 +182,61 @@ def obtener_tareas():
 @jwt_required()
 def crear_tarea():
 
-    data = request.get_json() or {}
-    if not data:
-        return jsonify({'msg': 'No se recibieron datos'}), 400
-    
-    # Campos requeridos
-    required_fields = ['titulo', 'fecha', 'horaInicio', 'horaFin', 'etiqueta']
-    empty_fields = [f for f in required_fields if not data.get(f)]
-    if empty_fields:
-        return jsonify({
-            'msg': 'Algunos campos están vacíos o faltan',  
-            'Campos vacíos o faltantes': empty_fields
-        }), 400
-    
-    # Parsear strings a date y time
-    fecha_str = data.get('fecha')         # e.g. "2025-06-25"
-    hi_str   = data.get('horaInicio')     # e.g. "09:00"
-    hf_str   = data.get('horaFin')        # e.g. "10:30"
+    try:
+        data = request.get_json() or {}
+        if not data:
+            return jsonify({'msg': 'No se recibieron datos'}), 400
+        
+        # Campos requeridos
+        required_fields = ['titulo', 'fecha', 'horaInicio', 'horaFin', 'etiqueta']
+        empty_fields = [f for f in required_fields if not data.get(f)]
+        if empty_fields:
+            return jsonify({
+                'msg': 'Algunos campos están vacíos o faltan',  
+                'Campos vacíos o faltantes': empty_fields
+            }), 400
+        
+        try:
+            fecha = datetime.strptime(data['fecha'], '%Y-%m-%d').date()
+            horaInicio = datetime.strptime(data['horaInicio'], '%H:%M').time()
+            horaFin    = datetime.strptime(data['horaFin'],    '%H:%M').time()
+        except ValueError as err:
+            return jsonify({
+                'msg':   'Formato de fecha/hora inválido',
+                'error': str(err)
+            }), 400
 
-    fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-    horaInicio = datetime.strptime(hi_str, '%H:%M').time()
-    horaFin    = datetime.strptime(hf_str, '%H:%M').time()
-    
+        # Verificamos si el usuario está autenticado
+        email_user = get_jwt_identity()
+        if not email_user:
+            return jsonify({'msg': 'Usuario no autenticado'}), 401
+        
+        # Obtenemos el usuario autenticado
+        user = Usuario.query.filter_by(email=email_user).first()
+        if not user:
+            return jsonify({'msg': 'Usuario no encontrado'}), 404
+        
+        nueva_tarea = Tarea(
+            titulo=data.get('titulo'),
+            fecha=fecha,
+            horaInicio=horaInicio,
+            horaFin=horaFin,
+            etiqueta=data.get('etiqueta'),
+            idUsuario=user.idUsuario
+        )
 
-    # Verificamos si el usuario está autenticado
-    email_user = get_jwt_identity()
-    if not email_user:
-        return jsonify({'msg': 'Usuario no autenticado'}), 401
-    
-    # Obtenemos el usuario autenticado
-    user = Usuario.query.filter_by(email=email_user).first()
-    if not user:
-        return jsonify({'msg': 'Usuario no encontrado'}), 404
-    
-    nueva_tarea = Tarea(
-        titulo=data.get('titulo'),
-        fecha=data.get('fecha'),
-        horaInicio=data.get('horaInicio'),
-        horaFin=data.get('horaFin'),
-        etiqueta=data.get('etiqueta'),
-        idUsuario=user.idUsuario
-    )
+        db.session.add(nueva_tarea)
+        db.session.commit()
+        return jsonify({"mensaje": "Tarea creada exitosamente", "tarea": nueva_tarea.serialize()}), 201
 
-    db.session.add(nueva_tarea)
-    db.session.commit()
-    return jsonify({"mensaje": "Tarea creada exitosamente", "tarea": nueva_tarea.serialize()}), 201
+    except Exception as ex:
+            # imprime en consola el traceback
+            import traceback; traceback.print_exc()
+            # siempre devolvemos JSON
+            return jsonify({
+                'msg':   'Error interno al crear tarea',
+                'error': str(ex)
+            }), 500
 
 
 
