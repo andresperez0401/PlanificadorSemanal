@@ -9,13 +9,15 @@ const getState = ({ getStore, getActions, setStore }) => {
     },
     actions: {
       // Iniciar sesión
+      
+
       login: async (email, clave) => {
         setStore({ loading: true, error: null });
         console.log("Iniciando sesión con:", email, clave);
-        console.log("Backend URL:",`${process.env.BACKEND_URL}login`);
+        console.log("Backend URL:",`${import.meta.env.VITE_BACKEND_URL}login`);
         try {
       
-          const response = await fetch(`${process.env.BACKEND_URL}login`, {
+          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, clave })
@@ -55,7 +57,7 @@ const getState = ({ getStore, getActions, setStore }) => {
       signup: async (userData) => {
         setStore({ loading: true, error: null });
         try {
-          const response = await fetch(`${process.env.BACKEND_URL}usuario`, {
+          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}usuario`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(userData)
@@ -111,7 +113,7 @@ const getState = ({ getStore, getActions, setStore }) => {
         if (!token) return;
         
         try {
-          const response = await fetch(`${process.env.BACKEND_URL}tareas`, {
+          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}tareas`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -144,7 +146,7 @@ const getState = ({ getStore, getActions, setStore }) => {
         if (!token) return null;
         
         try {
-          const response = await fetch(`${process.env.BACKEND_URL}tarea`, {
+          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}tarea`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -189,7 +191,7 @@ const getState = ({ getStore, getActions, setStore }) => {
         if (!token) return false;
         
         try {
-          const response = await fetch(`${process.env.BACKEND_URL}tarea/${taskId}`, {
+          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}tarea/${taskId}`, {
             method: 'DELETE',
             headers: {
               'Authorization': `Bearer ${token}`
