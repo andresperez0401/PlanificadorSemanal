@@ -161,6 +161,32 @@ def eliminar_usuario(email):
     return jsonify({'msg': 'Usuario eliminado exitosamente'}), 200
 
 
+#Ruta para ver si existe el telefono
+@app.route('/usuario/telefono/<string:telefono>', methods=['GET'])
+def verificar_telefono(telefono):
+    # Verificamos si el teléfono ya existe
+    usuario = Usuario.query.filter_by(telefono=telefono).first()
+    
+    if usuario:
+        return jsonify({'existe': True, 'usuario': usuario.serialize()}), 200
+    else:
+        return jsonify({'existe': False}), 404
+    
+
+#Ruta para devolver tareas de un usuario por numero de teléfono
+@app.route('/usuario/telefono/<string:telefono>/tareas', methods=['GET'])
+def obtener_tareas_por_telefono(telefono):
+    # Verificamos si el teléfono ya existe
+    usuario = Usuario.query.filter_by(telefono=telefono).first()
+    
+    if not usuario:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    
+    # Obtenemos las tareas del usuario
+    tareas = usuario.tareas
+    return jsonify([t.serialize() for t in tareas]), 200
+
+
 #------------------------------------------------------- Finalizan las rutas de Usuario -------------------------------------------------------------------------
 
 
