@@ -22,6 +22,7 @@ export default function CalendarView({ events, onDateClick, onEventClick }) {
       <FullCalendar
         plugins={[timeGridPlugin, interactionPlugin]}
         initialView="timeGridWeek"
+        firstDay={1}
         slotMinTime="06:00:00"
         slotMaxTime="22:00:00"
         events={events}
