@@ -1,0 +1,28 @@
+.banner {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  padding: 1rem;
+  border-radius: 12px;
+  text-align: center;
+  font-style: italic;
+  font-size: 1.1rem;
+  margin: 0 1rem 1.5rem; 
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(67, 97, 238, 0.15);
+  font-family: 'Poppins', sans-serif;
+}
+
+@media (max-width: 768px) {
+  .banner {
+    font-size: 1rem;
+    padding: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .banner {
+    font-size: 0.95rem;
+    padding: 0.8rem;
+    margin-bottom: 1rem;
+  }
+}

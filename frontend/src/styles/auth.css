@@ -1,0 +1,236 @@
+.auth-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100vw;
+  padding: 20px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #40b0dd, #cfd9e6);
+}
+
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  height: 100%;
+}
+
+.auth-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 500px;
+  padding: 40px;
+  margin: auto;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.logo {
+  font-size: 64px;
+  margin-bottom: 15px;
+  color: #4361ee;
+}
+
+.app-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 5px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.auth-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 30px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group {
+  margin-bottom: 25px;
+  width: 100%;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 18px;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 17px;
+  transition: all 0.3s ease;
+  font-family: 'Poppins', sans-serif;
+  box-sizing: border-box;
+}
+
+.auth-input:focus {
+  border-color: #4361ee;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
+}
+
+.phone-input {
+  width: 100%;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.phone-input:focus-within {
+  border-color: #4361ee;
+  box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.15);
+}
+
+.phone-input .PhoneInputInput {
+  padding: 18px;
+  border: none;
+  width: 100%;
+  font-size: 17px;
+  font-family: 'Poppins', sans-serif;
+  box-sizing: border-box;
+}
+
+.phone-input .PhoneInputCountry {
+  padding: 0 15px;
+}
+
+.auth-btn {
+  width: 100%;
+  padding: 18px;
+  background: linear-gradient(135deg, #4361ee, #3a0ca3);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 15px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.auth-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(67, 97, 238, 0.3);
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 30px;
+  color: #666;
+  font-size: 17px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.auth-link {
+  color: #4361ee;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+.forgot-link {
+  display: block;
+  margin-top: 20px;
+  color: #666;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-family: 'Poppins', sans-serif;
+}
+
+.forgot-link:hover {
+  color: #4361ee;
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .auth-card {
+    padding: 35px 30px;
+    max-width: 90%;
+  }
+  
+  .logo {
+    font-size: 56px;
+  }
+  
+  .app-title {
+    font-size: 28px;
+  }
+  
+  .auth-title {
+    font-size: 24px;
+  }
+  
+  .auth-input, .phone-input .PhoneInputInput {
+    padding: 16px;
+    font-size: 16px;
+  }
+  
+  .auth-btn {
+    padding: 16px;
+    font-size: 17px;
+  }
+  
+  .auth-footer {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-page {
+    padding: 15px;
+  }
+  
+  .auth-card {
+    padding: 30px 25px;
+    border-radius: 14px;
+  }
+  
+  .logo {
+    font-size: 48px;
+  }
+  
+  .app-title {
+    font-size: 24px;
+  }
+  
+  .auth-title {
+    font-size: 22px;
+    margin-bottom: 25px;
+  }
+  
+  .auth-input, .phone-input .PhoneInputInput {
+    padding: 15px;
+    font-size: 15px;
+  }
+  
+  .auth-btn {
+    padding: 15px;
+    font-size: 16px;
+  }
+  
+  .auth-footer {
+    font-size: 15px;
+    margin-top: 25px;
+  }
+}

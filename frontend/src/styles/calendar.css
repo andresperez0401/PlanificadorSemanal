@@ -1,0 +1,167 @@
+.calendar-wrapper {
+  background: white;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.fc {
+  font-family: 'Roboto', sans-serif;
+  flex: 1;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--dark);
+}
+
+.fc .fc-button {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--gray);
+  text-transform: capitalize;
+  font-weight: 500;
+  transition: var(--transition);
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.fc .fc-button:hover {
+  background: var(--light-gray);
+  color: var(--dark);
+}
+
+.fc .fc-button-primary:not(:disabled):active,
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.fc .fc-daygrid-day-top {
+  justify-content: center;
+}
+
+.fc .fc-col-header-cell-cushion {
+  font-weight: 600;
+  color: var(--dark);
+  padding: 0.6rem 0;
+  font-size: 0.9rem;
+}
+
+.fc .fc-timegrid-slot {
+  height: 2.8rem;
+}
+
+.fc-event {
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 0.85rem;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  overflow: hidden;
+}
+
+.fc-event:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+.fc-event-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.fc-event-tag {
+  font-weight: bold;
+  font-size: 0.75rem;
+  margin-bottom: 3px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.fc-event-title {
+  font-weight: 500;
+  line-height: 1.2;
+  flex-grow: 1;
+  font-size: 0.9rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.fc-event-time {
+  font-weight: 600;
+  font-size: 0.75rem;
+  margin-top: 3px;
+  font-family: 'Poppins', sans-serif;
+}
+
+@media (max-width: 768px) {
+  .calendar-wrapper {
+    padding: 0.8rem;
+    border-radius: 10px;
+  }
+  
+  .fc .fc-toolbar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .fc .fc-toolbar-title {
+    font-size: 1.2rem;
+    margin: 0.5rem 0;
+  }
+  
+  .fc .fc-button {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.85rem;
+  }
+  
+  .fc .fc-col-header-cell-cushion {
+    font-size: 0.85rem;
+  }
+  
+  .fc-event-tag {
+    font-size: 0.7rem;
+  }
+  
+  .fc-event-title {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .fc .fc-toolbar {
+    flex-wrap: wrap;
+  }
+  
+  .fc .fc-toolbar-chunk {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .fc .fc-toolbar-title {
+    font-size: 1.1rem;
+  }
+  
+  .fc .fc-col-header-cell-cushion {
+    font-size: 0.75rem;
+    padding: 0.3rem 0;
+  }
+  
+  .fc .fc-timegrid-slot {
+    height: 2.5rem;
+    font-size: 0.7rem;
+  }
+  
+  .fc-event {
+    padding: 4px 6px;
+    font-size: 0.8rem;
+  }
+}

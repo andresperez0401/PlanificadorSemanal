@@ -7,27 +7,28 @@ import './App.css'
 import { ToastContainer } from "react-toastify";
 import injectContext from "./store/appContext.jsx";
 import Navbar from './components/Navbar.jsx';
-import StartPage from './components/StartPage.jsx';
-import WhatsAppButton from "./components/WhatsappButton.jsx";
+import Home from './pages/Home.jsx';
+import Signup from './pages/Signup.jsx';
+import Login from './pages/Login.jsx';
 
 const AppContent = () => {
   const location = useLocation();
 
   //Esto sirve para ocultar ciertas rutas y que no se muestre el footer por ejemplo
-  const hideLayout = location.pathname === "/" ||
-  location.pathname === "/home";
+  const hideNavbar = ['/login', '/signup'].includes(location.pathname);
 
-
-  return (
-    <>
-      <Routes>
-        <Route path="/" element={<StartPage />} />
-        {/* <Route path="/home" element={<ListPaddel />} /> */}
-      </Routes>
-      {/* <WhatsAppButton /> */}
-      {!hideLayout && <Footer />}
-
-      {/* Para alertas y notificaciones de la app */}
+   return (
+    <div className="app-container">
+      {!hideNavbar && <Navbar />}
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+        </Routes>
+      </main>
+      
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -36,8 +37,9 @@ const AppContent = () => {
         closeOnClick
         pauseOnHover
         draggable
+        theme="colored"
       />
-    </>
+    </div>
   );
 };
 
