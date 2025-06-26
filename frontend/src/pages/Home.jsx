@@ -64,7 +64,11 @@ export default function Home() {
 
   const handleSave = async (taskData) => {
 
-    console.log('Datos de la tarea a guardar:', taskData);
+    if (!store.token) {
+      error('Debe iniciar sesión para agregar tareas');
+      closeModal();
+      return;
+    }
 
     const savedTask = await actions.createTask({
       titulo: taskData.title,

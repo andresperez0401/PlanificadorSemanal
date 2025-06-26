@@ -27,10 +27,16 @@ export default function AddTaskModal({ isOpen, onClose, onSave, defaultDate }) {
   // 2) Calculamos la hora actual en HH:MM
   const nowTime = now.toTimeString().slice(0, 5);
 
-  // Inicializar la fecha (defaultDate o hoy)
+   // Resetear campos al abrir el modal
   useEffect(() => {
-    setDate(defaultDate || todayStr);
-  }, [defaultDate, todayStr]);
+    if (isOpen) {
+      setTitle('');
+      setDate(defaultDate || todayStr);
+      setStartTime('09:00');
+      setEndTime('10:00');
+      setTag(tags[0]);
+    }
+  }, [isOpen, defaultDate, todayStr]);
 
   // Si la fecha es hoy y el startTime está antes de ahora, lo corregimos
   useEffect(() => {

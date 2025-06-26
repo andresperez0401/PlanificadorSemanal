@@ -46,31 +46,6 @@
   justify-content: center;
 }
 
-/* Inicio*/
-
-/* 1) Header del día de hoy */
-.fc .fc-col-header-cell.fc-day-today {
-  background-color: #fff09a !important;
-}
-
-/* 2) “Marco” de la columna de horarios */
-.fc .fc-timegrid-col-frame.fc-day-today {
-  background-color: #f2fcbd !important;
-}
-
-/* 3) Celdas de fondo (las que salen en amarillo por defecto) */
-.fc .fc-timegrid-col-bg td.fc-day-today {
-  background-color: rgba(224, 247, 250, 0.3) !important;
-}
-
-/* 4) Si usas selectable y quieres que al seleccionar rango sea el mismo tono */
-.fc .fc-highlight {
-  background-color: rgba(224, 247, 250, 0.5) !important;
-}
-
-
-
-/* Fin */
 
 .fc .fc-col-header-cell-cushion {
   font-weight: 600;
@@ -125,6 +100,39 @@
   margin-top: 3px;
   font-family: 'Poppins', sans-serif;
 }
+
+/* ================================================== */
+/*  OVERRIDES PARA PINTAR “HOY” EN AZUL SUAVE         */
+/* ================================================== */
+
+/* 1) Define tu azul suave como la variable que FullCalendar usa internamente */
+.fc-theme-standard {
+  /* esto es el bg del header y de celdas “hoy” */
+  --fc-today-bg-color: #e0f7fa !important;
+}
+
+/* 2) Elimina cualquier fondo amarillo en la capa de horas */
+.fc .fc-timegrid-col-bg td.fc-day-today,
+.fc .fc-scrollgrid-section-bg td.fc-day-today {
+  /* quita el fondo por completo */
+  background-color: transparent !important;
+}
+
+/* 3) Elimina el marco amarillo de la columna actual */
+.fc .fc-timegrid-col-frame.fc-day-today {
+  background-color: transparent !important;
+}
+
+/* 4) Asegura que el header use la variable */
+.fc .fc-col-header-cell.fc-day-today {
+  background-color: var(--fc-today-bg-color) !important;
+}
+
+/* 5) Si usas selectable, pinta el highlight en azul */
+.fc .fc-highlight {
+  background-color: rgba(224, 247, 250, 0.5) !important;
+}
+/* ================================================== */
 
 @media (max-width: 768px) {
   .calendar-wrapper {
@@ -190,4 +198,5 @@
     padding: 4px 6px;
     font-size: 0.8rem;
   }
+
 }
