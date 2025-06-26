@@ -6,3 +6,4 @@ Flask-JWT-Extended
 twilio
 openai
 SQLAlchemy
+gunicorn
