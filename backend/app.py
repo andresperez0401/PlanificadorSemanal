@@ -166,13 +166,13 @@ def eliminar_usuario(email):
 def verificar_telefono(telefono):
     # Verificamos si el teléfono ya existe
 
-    numero = telefono.replace(' whatsapp:', '')  # Normalizamos el número eliminando el '+'
+    numero = telefono.replace('whatsapp:', '')  # Normalizamos el número eliminando el '+'
     usuario = Usuario.query.filter_by(telefono=numero).first()
     
     if usuario:
         return jsonify({'existe': True, 'usuario': usuario.serialize()}), 200
     else:
-        return jsonify({'existe': False}), 404
+        return jsonify({'existe': False}), 200
     
 
 #Ruta para devolver tareas de un usuario por numero de teléfono
