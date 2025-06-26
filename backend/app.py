@@ -180,7 +180,9 @@ def verificar_telefono(telefono):
 @app.route('/usuario/telefono/<string:telefono>/tareas', methods=['GET'])
 def obtener_tareas_por_telefono(telefono):
     # Verificamos si el teléfono ya existe
-    usuario = Usuario.query.filter_by(telefono=telefono).first()
+
+    numero = telefono.replace('whatsapp:', '')
+    usuario = Usuario.query.filter_by(telefono=numero).first()
     
     if not usuario:
         return jsonify({'error': 'Usuario no encontrado'}), 404
