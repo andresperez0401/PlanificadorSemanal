@@ -1,7 +1,8 @@
 Flask
-flask-cors
-flask-jwt-extended
-flask-migrate
+Flask-Migrate
+Flask-CORS
 python-dotenv
+Flask-JWT-Extended
 twilio
 openai
+SQLAlchemy
