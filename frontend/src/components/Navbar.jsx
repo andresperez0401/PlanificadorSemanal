@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import '../styles/navbar.css';
+import img from "../img/organiza-app.png";
 
 export default function Navbar({ user, onLogout }) {
   const getInitials = (name) => {
@@ -10,8 +11,7 @@ export default function Navbar({ user, onLogout }) {
   return (
     <nav className="navbar">
       <div className="navbar-brand">
-        <span className="calendar-icon">📅</span>
-        <h1 className="app-title">Planificación Semanal</h1>
+        <img src={img} alt="Logo" className="logo" />
       </div>
       <div className="navbar-links">
         {user ? (

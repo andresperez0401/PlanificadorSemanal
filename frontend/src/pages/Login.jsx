@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import '../styles/auth.css';
+import img from "../img/organiza-app.png";
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -25,8 +26,9 @@ export default function Login() {
       <div className="auth-container">
         <div className="auth-card">
           <div className="auth-header">
-            <div className="logo">📅</div>
-            <h1 className="app-title">Planificación Semanal</h1>
+            <div className="logo">
+                <img src={img} alt="Logo" className="logo" />
+            </div>
             <h2 className="auth-title">Iniciar Sesión</h2>
           </div>
           
@@ -57,6 +59,7 @@ export default function Login() {
             
             <div className="auth-footer">
               <p>¿No tienes cuenta? <Link to="/signup" className="auth-link">Regístrate</Link></p>
+              <p><Link to="/home" className="auth-link">Regresar</Link></p>
             </div>
           </form>
         </div>

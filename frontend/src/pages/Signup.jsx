@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import '../styles/auth.css';
+import img from "../img/organiza-app.png";
 
 export default function Signup() {
   const [name, setName] = useState('');
@@ -38,8 +39,9 @@ export default function Signup() {
       <div className="auth-container">
         <div className="auth-card">
           <div className="auth-header">
-            <div className="logo">📅</div>
-            <h1 className="app-title">Planificación Semanal</h1>
+            <div className="logo">
+                <img src={img} alt="Logo" className="logo" />
+            </div>
             <h2 className="auth-title">Crear Cuenta</h2>
           </div>
           
@@ -103,6 +105,7 @@ export default function Signup() {
             
             <div className="auth-footer">
               <p>¿Ya tienes cuenta? <Link to="/login" className="auth-link">Inicia sesión</Link></p>
+              <p><Link to="/home" className="auth-link">Regresar al home</Link></p>
             </div>
           </form>
         </div>

@@ -2,18 +2,35 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
+  /* altura fija para la barra */
+  height: 80px;            /* o el valor que quieras */
+  padding: 0 2rem;         /* sólo padding horizontal */
   background: white;
   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
   position: sticky;
   top: 0;
   z-index: 1000;
+  margin: 0;
+  border: 0;
 }
 
 .navbar-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  padding-top: 30px;
+  height: 100%;
+}
+
+.navbar-brand img {
+  width: auto;
+  height: 80px;
+  margin: 0;
+  border: 0;
+  padding: 0;
 }
 
 .calendar-icon {

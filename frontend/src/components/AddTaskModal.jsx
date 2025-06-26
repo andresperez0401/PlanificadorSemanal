@@ -17,14 +17,38 @@ export default function AddTaskModal({ isOpen, onClose, onSave, defaultDate }) {
   const [endTime, setEndTime] = useState('10:00');
   const [tag, setTag] = useState(tags[0]);
 
+  // 1) Calculamos “hoy” en formato YYYY-MM-DD
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm   = String(now.getMonth() + 1).padStart(2, '0');
+  const dd   = String(now.getDate()).padStart(2, '0');
+  const todayStr = `${yyyy}-${mm}-${dd}`;
+
+  // 2) Calculamos la hora actual en HH:MM
+  const nowTime = now.toTimeString().slice(0, 5);
+
+  // Inicializar la fecha (defaultDate o hoy)
   useEffect(() => {
-    if (defaultDate) {
-      setDate(defaultDate);
-    } else {
-      const today = new Date().toISOString().split('T')[0];
-      setDate(today);
+    setDate(defaultDate || todayStr);
+  }, [defaultDate, todayStr]);
+
+  // Si la fecha es hoy y el startTime está antes de ahora, lo corregimos
+  useEffect(() => {
+    if (date === todayStr && startTime < nowTime) {
+      setStartTime(nowTime);
     }
-  }, [defaultDate]);
+
+    // Si la fecha es hoy y el endTime está antes de startTime, lo corregimos
+    if (date === todayStr && endTime <= addMinutes(startTime, 60)) {
+      const newEndTime = addMinutes(startTime, 60);
+      setEndTime(newEndTime);
+    }
+
+    if (endTime <= addMinutes(startTime, 60)) {
+      const newEndTime = addMinutes(startTime, 60);
+      setEndTime(newEndTime);
+    }
+  }, [date, nowTime, startTime, endTime, todayStr]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -33,6 +57,19 @@ export default function AddTaskModal({ isOpen, onClose, onSave, defaultDate }) {
     }
     onSave({ title, date, startTime, endTime, tag });
   };
+
+
+  //Funcion para sumar minutos
+  function addMinutes(timeStr, minsToAdd) {
+    const [h, m] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(h);
+    date.setMinutes(m + minsToAdd);
+
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  }
 
   if (!isOpen) return null;
 
@@ -62,6 +99,7 @@ export default function AddTaskModal({ isOpen, onClose, onSave, defaultDate }) {
               value={date}
               onChange={e => setDate(e.target.value)}
               className="modal-input"
+              min={todayStr} 
               required
             />
           </div>
