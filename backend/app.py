@@ -350,9 +350,15 @@ def parse_task_with_ai(text):
 # ── webhook ────────────────────────────────────────────────────────────────
 @app.route('/api/whatsapp', methods=['POST'])
 def whatsapp_webhook():
+ # logging
+    app.logger.info(f"🔔 Webhook hit: From={request.values.get('From')} Body={request.values.get('Body')}")
+    
+
     raw_from = request.values.get('From','')   # "whatsapp:+123..."
     phone    = raw_from.replace('whatsapp:','')# "+123..."
     body     = request.values.get('Body','').strip()
+
+    hoy = date.today()
 
     # 1) REGISTRAR
     if body.upper().startswith('REGISTRAR '):
@@ -386,7 +392,7 @@ def whatsapp_webhook():
     cmd = body.upper()
     # 3) TAREAS HOY / SEMANA
     if cmd in ('TAREAS HOY','TAREAS SEMANA'):
-        hoy = date.today()
+        
         tareas = u.tareas
         if cmd=='TAREAS HOY':
             filt = [t for t in tareas if t.fecha==hoy]
