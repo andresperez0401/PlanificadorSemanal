@@ -1,5 +1,5 @@
 import os
-import openai
+from openai import OpenAI
 from twilio.rest import Client as TwilioClient
 import json
 from flask import Flask, jsonify, request
@@ -20,7 +20,8 @@ CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True) # Perm
 TW_SID   = os.getenv('TWILIO_ACCOUNT_SID')
 TW_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 TW_FROM  = os.getenv('TWILIO_WHATSAPP_NUMBER')
-openai.api_key = os.getenv('OPENAI_API_KEY')
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+openai_client = OpenAI(api_key=OPENAI_API_KEY)
 twilio = TwilioClient(TW_SID, TW_TOKEN)
 
 #----------------------------------------------------- Base de Datos -----------------------------------------------------------------
@@ -327,25 +328,24 @@ def send_whatsapp(to, body):
     )
 
 def classify_task(text):
-    r = openai.ChatCompletion.create(
-        model='gpt-4',
-        messages=[
-          {'role':'system','content':'Categorizador: Trabajo, Personal, Descanso, Estudio, Salud.'},
-          {'role':'user','content':text}
-        ]
+    r = openai_client.chat.completions.create(
+      model="gpt-4",
+      messages=[
+        {"role":"system","content":"Categorizador: Trabajo, Personal,…"},
+        {"role":"user","content": text}
+      ]
     )
-    return r.choices[0].message.content.strip()
+    return r.choices[0].message.content
 
-def parse_task_with_ai(text):
-    prompt = (
-      "Devuélveme JSON con title, fecha(YYYY-MM-DD), "
-      "horaInicio(HH:MM), horaFin(HH:MM) para: " + text
+def parse_task_with_ai(text: str) -> dict:
+    resp = openai_client.chat.completions.create(
+      model="gpt-4",
+      messages=[{"role":"user","content":
+        "Devuélveme un JSON con keys: title, fecha(YYYY-MM-DD), horaInicio(HH:MM), horaFin(HH:MM) de este mensaje: "
+        + text
+      }]
     )
-    r = openai.ChatCompletion.create(
-      model='gpt-4',
-      messages=[{'role':'user','content':prompt}]
-    )
-    return json.loads(r.choices[0].message.content)
+    return json.loads(resp.choices[0].message.content)
 
 # ── webhook ────────────────────────────────────────────────────────────────
 @app.route('/api/whatsapp', methods=['POST'])
