@@ -13,18 +13,15 @@ from datetime import timedelta, datetime, date
 
 load_dotenv()
 
-# Ahora cargamos las variables Twilio y OpenAI
-TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
-TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
-TWILIO_WHATSAPP_NUMBER = os.getenv('TWILIO_WHATSAPP_NUMBER')
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True) # Permite solicitudes desde otros orígenes (React)
 
-
-twilio_client = TwilioClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-openai.api_key   = OPENAI_API_KEY
+# Twilio y OpenAI desde .env
+TW_SID   = os.getenv('TWILIO_ACCOUNT_SID')
+TW_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
+TW_FROM  = os.getenv('TWILIO_WHATSAPP_NUMBER')
+openai.api_key = os.getenv('OPENAI_API_KEY')
+twilio = TwilioClient(TW_SID, TW_TOKEN)
 
 #----------------------------------------------------- Base de Datos -----------------------------------------------------------------
 
@@ -48,46 +45,6 @@ app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
 jwt = JWTManager(app)
 
 #---------------------------------------------------- Termina la BD configuración -----------------------------------------------------
-
-
-# -------------------------------------------------------------------- HELPERS -------------------------------------------------------
-def send_whatsapp(to: str, body: str):
-    try:
-        message = twilio_client.messages.create(
-            from_=f"whatsapp:{TWILIO_WHATSAPP_NUMBER}",
-            body=body,
-            to=f"whatsapp:{to}"
-        )
-        app.logger.info(f"Mensaje enviado a {to}: {message.sid}")
-        return True
-    except Exception as e:
-        app.logger.error(f"Error enviando WhatsApp: {str(e)}")
-        return False
-
-def classify_task(text: str) -> str:
-    resp = openai.ChatCompletion.create(
-        model='gpt-4',
-        messages=[
-            { 'role': 'system',
-              'content': 'Eres un categorizador: Trabajo, Personal, Descanso, Estudio, Salud.' },
-            { 'role': 'user',
-              'content': f"Clasifica esta tarea: '{text}'" }
-        ]
-    )
-    return resp.choices[0].message.content.strip()
-
-
-def parse_task_with_ai(text: str) -> dict:
-    prompt = (
-        "Devuélveme un JSON con keys: title, fecha(YYYY-MM-DD), "
-        "horaInicio(HH:MM), horaFin(HH:MM) de este mensaje: " + text
-    )
-    resp = openai.ChatCompletion.create(
-        model='gpt-4',
-        messages=[{'role':'user','content':prompt}]
-    )
-    return json.loads(resp.choices[0].message.content)
-
 
 
 #----------------------------------------------------- Rutas --------------------------------------------------------------------------
@@ -332,94 +289,117 @@ def eliminar_tarea(id_tarea):
 
 
 # --------------------------------------------------------------------------- WEBHOOK WHATSAPP ---------------------------------------------------------------------
+
+# ── helpers ────────────────────────────────────────────────────────────────
+def send_whatsapp(to, body):
+    twilio.messages.create(
+        from_=f"whatsapp:{TW_FROM}",
+        to=f"whatsapp:{to}",
+        body=body
+    )
+
+def classify_task(text):
+    r = openai.ChatCompletion.create(
+        model='gpt-4',
+        messages=[
+          {'role':'system','content':'Categorizador: Trabajo, Personal, Descanso, Estudio, Salud.'},
+          {'role':'user','content':text}
+        ]
+    )
+    return r.choices[0].message.content.strip()
+
+def parse_task_with_ai(text):
+    prompt = (
+      "Devuélveme JSON con title, fecha(YYYY-MM-DD), "
+      "horaInicio(HH:MM), horaFin(HH:MM) para: " + text
+    )
+    r = openai.ChatCompletion.create(
+      model='gpt-4',
+      messages=[{'role':'user','content':prompt}]
+    )
+    return json.loads(r.choices[0].message.content)
+
+# ── webhook ────────────────────────────────────────────────────────────────
 @app.route('/api/whatsapp', methods=['POST'])
 def whatsapp_webhook():
-    # 1) Extrae y normaliza el número: "whatsapp:+123..." → "+123..."
-    from_full = request.values.get('From', '')             # "whatsapp:+5841..."
-    phone     = from_full.replace('whatsapp:', '')         # "+5841..."
-    body      = request.values.get('Body', '').strip()
+    raw_from = request.values.get('From','')   # "whatsapp:+123..."
+    phone    = raw_from.replace('whatsapp:','')# "+123..."
+    body     = request.values.get('Body','').strip()
 
-    # 2) COMANDO DE REGISTRO
+    # 1) REGISTRAR
     if body.upper().startswith('REGISTRAR '):
         parts = body.split()
-        if len(parts) == 3:
-            email, clave = parts[1], parts[2]
+        if len(parts)==3:
+            email, pwd = parts[1], parts[2]
             if Usuario.query.filter_by(email=email).first():
-                send_whatsapp(phone, "❌ Ese email ya existe.")
+                send_whatsapp(phone, "❌ Email ya registrado.")
             else:
                 u = Usuario(
-                    nombre   = email.split('@')[0],
-                    email    = email,
-                    clave    = clave,
-                    telefono = phone
+                  nombre=email.split('@')[0],
+                  email=email,
+                  clave=pwd,
+                  telefono=phone
                 )
-                db.session.add(u)
-                db.session.commit()
-                send_whatsapp(phone, "✅ Te has registrado. ¡Bienvenido!")
+                db.session.add(u); db.session.commit()
+                send_whatsapp(phone, "✅ ¡Registrado! Bienvenido.")
         else:
             send_whatsapp(phone, "ℹ️ Usa: REGISTRAR tu_email tu_contraseña")
-        return ('', 200)
+        return ('',200)
 
-    # 3) ¿TELÉFONO REGISTRADO?
-    user = Usuario.query.filter_by(telefono=phone).first()
-    if not user:
+    # 2) ¿Usuario existe?
+    u = Usuario.query.filter_by(telefono=phone).first()
+    if not u:
         send_whatsapp(phone,
-            "❌ No estás en nuestra base. Primero regístrate con:\n"
-            "REGISTRAR tu_email@ejemplo.com tu_contraseña"
+          "❌ No estás registrado. Envía:\n"
+          "REGISTRAR tu_email@ejemplo.com tu_contraseña"
         )
-        return ('', 200)
+        return ('',200)
 
-    # 4) CONSULTA DE TAREAS
     cmd = body.upper()
-    if cmd in ('TAREAS HOY', 'TAREAS SEMANA'):
+    # 3) TAREAS HOY / SEMANA
+    if cmd in ('TAREAS HOY','TAREAS SEMANA'):
         hoy = date.today()
-        tareas = user.tareas
-        if cmd == 'TAREAS HOY':
-            filt = [t for t in tareas if t.fecha == hoy]
+        tareas = u.tareas
+        if cmd=='TAREAS HOY':
+            filt = [t for t in tareas if t.fecha==hoy]
         else:
-            lunes = hoy - timedelta(days=hoy.weekday())
-            filt  = [t for t in tareas if lunes <= t.fecha < lunes + timedelta(7)]
-
+            inicio_semana = hoy - timedelta(days=hoy.weekday())
+            filt = [t for t in tareas
+                    if inicio_semana<=t.fecha<inicio_semana+timedelta(7)]
         if not filt:
-            send_whatsapp(phone, "ℹ️ No tienes tareas en ese periodo.")
+            send_whatsapp(phone, "ℹ️ No tienes tareas en este período.")
         else:
-            líneas = [f"{t.fecha} {t.horaInicio}-{t.horaFin}: {t.titulo}" for t in filt]
-            send_whatsapp(phone, "🗓 Tus tareas:\n" + "\n".join(líneas))
-        return ('', 200)
+            lines = [f"{t.fecha} {t.horaInicio}-{t.horaFin}: {t.titulo}"
+                     for t in filt]
+            send_whatsapp(phone, "🗓️ Tus tareas:\n"+"\n".join(lines))
+        return ('',200)
 
-    # 5) TEXTO LIBRE → CREAR TAREA vía IA
-    #    (clasificación + parseo + commit + notificación)
+    # 4) TEXTO LIBRE → CREAR TAREA por IA
     categ = classify_task(body)
     try:
-        datos = parse_task_with_ai(body)
-        hi    = datetime.strptime(datos['horaInicio'], '%H:%M').time()
-        hf    = datetime.strptime(datos['horaFin'],    '%H:%M').time()
-        # Asegura al menos 1h de duración
-        if (datetime.combine(hoy, hf) - datetime.combine(hoy, hi)).seconds < 3600:
-            hf = (datetime.combine(hoy, hi) + timedelta(hours=1)).time()
-
-        t = Tarea(
-            titulo     = datos['title'],
-            fecha      = datetime.strptime(datos['fecha'], '%Y-%m-%d').date(),
-            horaInicio = hi,
-            horaFin    = hf,
-            etiqueta   = categ,
-            idUsuario  = user.idUsuario
+        d = parse_task_with_ai(body)
+        hi = datetime.strptime(d['horaInicio'],'%H:%M').time()
+        hf = datetime.strptime(d['horaFin'   ],'%H:%M').time()
+        # mínimo 1h
+        if (datetime.combine(hoy,hf)-datetime.combine(hoy,hi)).seconds<3600:
+            hf = (datetime.combine(hoy,hi)+timedelta(hours=1)).time()
+        tarea = Tarea(
+          titulo=d['title'],
+          fecha=datetime.strptime(d['fecha'],'%Y-%m-%d').date(),
+          horaInicio=hi, horaFin=hf,
+          etiqueta=categ, idUsuario=u.idUsuario
         )
-        db.session.add(t)
-        db.session.commit()
+        db.session.add(tarea); db.session.commit()
         send_whatsapp(phone,
-            f"✅ Tarea '{t.titulo}' agregada en '{categ}' "
-            f"para {t.fecha} {t.horaInicio}-{t.horaFin}"
+          f"✅ Tarea '{tarea.titulo}' en '{categ}' "
+          f"para {tarea.fecha} {tarea.horaInicio}-{tarea.horaFin}"
         )
     except Exception:
         send_whatsapp(phone,
-            "❓ No entiendo tu mensaje. Usa:\n"
-            "Título para YYYY-MM-DD HH:MM-HH:MM"
+          "❓ No entendí tu mensaje. Usa:\n"
+          "Título para YYYY-MM-DD HH:MM-HH:MM"
         )
-    return ('', 200)
-
-
+    return ('',200)
 
 
 
