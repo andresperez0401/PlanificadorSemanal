@@ -166,7 +166,7 @@ def eliminar_usuario(email):
 def verificar_telefono(telefono):
     # Verificamos si el teléfono ya existe
 
-    numero = telefono.replace('whatsapp:', '')  # Normalizamos el número eliminando el '+'
+    numero = telefono.replace(' whatsapp:', '')  # Normalizamos el número eliminando el '+'
     usuario = Usuario.query.filter_by(telefono=numero).first()
     
     if usuario:
