@@ -6,14 +6,15 @@ name = "pypi"
 [packages]
 sqlalchemy = "*"
 alembic = "*"
-dotenv = "*"
-flask = "*"
 flask-sqlalchemy = "*"
+jwt = "*"
+flask = "*"
 flask-migrate = "*"
 flask-cors = "*"
 python-dotenv = "*"
-jwt = "*"
 flask-jwt-extended = "*"
+twilio = "*"
+openai = "*"
 
 [dev-packages]
 
