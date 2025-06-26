@@ -4,6 +4,10 @@ import AddTaskModal from '../components/AddTaskModal';
 import PhraseBanner from '../components/PhraseBanner';
 import { toast } from 'react-toastify';
 import '../styles/home.css';
+import { useEffect, useContext } from 'react';
+import { Context } from '../store/appContext';
+import { useAlert } from "../hooks/useAlert.js";
+
 
 const tagColors = {
   Trabajo:  { bg: '#4CAF50', border: '#388E3C' },
@@ -18,6 +22,40 @@ export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDate, setModalDate] = useState(null);
 
+  const { error, success } = useAlert();
+  const {store, actions} = useContext(Context);
+
+  //---------------------------------------------------------------------------------------------------------------------------
+  //Hooks UseEffect para cargar eventos desde el store
+
+    // Cargar tareas al montar el componente
+    useEffect(() => {
+      if (store.user) {
+        actions.getTasks();
+      }
+    }, [store.user]);
+
+    // Convertir tareas a eventos para el calendario
+    useEffect(() => {
+      const newEvents = store.tasks.map(task => {
+        const color = tagColors[task.etiqueta] || { bg: '#607D8B', border: '#455A64' };
+        return {
+          id: task.idTarea,
+          title: task.titulo,
+          start: `${task.fecha}T${task.horaInicio}`,
+          end: `${task.fecha}T${task.horaFin}`,
+          backgroundColor: color.bg,
+          borderColor: color.border,
+          textColor: color.text || '#FFF',
+          extendedProps: { tag: task.etiqueta }
+        };
+      });
+      setEvents(newEvents);
+    }, [store.tasks]);
+
+
+  //---------------------------------------------------------------------------------------------------------------------------
+
   const openModal = (dateStr = null) => {
     setModalDate(dateStr);
     setModalOpen(true);
@@ -25,22 +63,26 @@ export default function Home() {
 
   const closeModal = () => setModalOpen(false);
 
-  const handleSave = ({ title, date, startTime, endTime, tag }) => {
-    const color = tagColors[tag] || { bg: '#607D8B', border: '#455A64' };
-    const newEvt = {
-      id: Date.now(),
-      title,
-      start: `${date}T${startTime}`,
-      end: `${date}T${endTime}`,
-      backgroundColor: color.bg,
-      borderColor: color.border,
-      textColor: color.text || '#FFF',
-      extendedProps: { tag }
-    };
-    setEvents(prev => [...prev, newEvt]);
-    closeModal();
-    toast.success('Tarea agregada correctamente');
+  const handleSave = async (taskData) => {
+
+    const savedTask = await actions.createTask({
+      titulo: taskData.title,
+      fecha: taskData.date,
+      horaInicio: taskData.startTime,
+      horaFin: taskData.endTime,
+      etiqueta: taskData.tag
+    });
+
+    console.log('Datos de la tarea:', savedTask);
+    
+    if (savedTask.success) {
+      closeModal();
+      success('Tarea agregada correctamente');
+    } else {
+      error('Error al guardar tarea');
+    }
   };
+
 
   const handleEventClick = info => {
     toast.info(
@@ -50,7 +92,7 @@ export default function Home() {
           <button 
             className="toast-btn toast-btn-confirm"
             onClick={() => {
-              setEvents(prev => prev.filter(e => e.id !== +info.event.id));
+              actions.deleteTask(Number(info.event.id));
               toast.dismiss();
             }}
           >

@@ -1,12 +1,22 @@
 import { Link } from 'react-router-dom';
 import '../styles/navbar.css';
 import img from "../img/organiza-app.png";
+import { useContext, useEffect } from 'react';
+import { Context } from '../store/appContext';
 
-export default function Navbar({ user, onLogout }) {
+export default function Navbar() {
+
+
+  const { store, actions } = useContext(Context);
+
   const getInitials = (name) => {
     if (!name) return 'U';
     return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   };
+
+  const onLogout = () => {
+    actions.logout();
+  }
 
   return (
     <nav className="navbar">
@@ -14,10 +24,10 @@ export default function Navbar({ user, onLogout }) {
         <img src={img} alt="Logo" className="logo" />
       </div>
       <div className="navbar-links">
-        {user ? (
+        {store.token ? (
           <>
             <div className="user-avatar">
-              {getInitials(user.name)}
+              {getInitials(store.usuario.nombre)}
             </div>
             <button onClick={onLogout} className="nav-link logout-btn">Cerrar sesión</button>
           </>

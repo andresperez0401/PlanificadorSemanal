@@ -5,6 +5,9 @@ import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import '../styles/auth.css';
 import img from "../img/organiza-app.png";
+import { useContext } from 'react';
+import { Context } from '../store/appContext';
+import { useAlert } from '../hooks/useAlert.js';
 
 export default function Signup() {
   const [name, setName] = useState('');
@@ -14,24 +17,41 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const { store, actions } = useContext(Context);
+  const { success, error } = useAlert();
+
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !email || !phone || !password || !confirmPassword) {
-      toast.error('Por favor complete todos los campos');
+      error('Por favor complete todos los campos');
       return;
     }
     if (password !== confirmPassword) {
-      toast.error('Las contraseñas no coinciden');
+      error('Las contraseñas no coinciden');
       return;
     }
     if (!phone) {
-      toast.error('Por favor ingrese un número de teléfono válido');
+      error('Por favor ingrese un número de teléfono válido');
       return;
     }
+
+    const userData = {
+      nombre: name,
+      email: email,
+      telefono: phone,
+      clave: password
+    };
+
+    const register = await actions.signup(userData);
     
-    // Simular registro exitoso
-    toast.success('Registro exitoso! Bienvenido');
-    navigate('/home');
+    if (register.success) {
+      success('Registro exitoso! Bienvenido');
+      navigate('/home');
+    } else {
+      error('Error en registro');
+    }
+
   };
 
   return (

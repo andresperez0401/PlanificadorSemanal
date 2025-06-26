@@ -3,22 +3,28 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import '../styles/auth.css';
 import img from "../img/organiza-app.png";
+import { useContext } from 'react';
+import { Context } from '../store/appContext';
+import { useAlert}from '../hooks/useAlert.js';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const { store, actions } = useContext(Context);
+  const { success, error } = useAlert();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error('Por favor complete todos los campos');
-      return;
+    const loginResponse = await actions.login(email, password);
+
+    if (loginResponse.success) {
+      success('Inicio de sesión exitoso');
+      navigate('/home');
+    } else {
+      error('Error en inicio de sesión');
     }
-    
-    // Simular inicio de sesión exitoso
-    toast.success('Inicio de sesión exitoso');
-    navigate('/home');
   };
 
   return (

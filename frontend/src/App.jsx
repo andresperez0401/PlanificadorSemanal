@@ -1,5 +1,5 @@
 import React from 'react';
-import { useState } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
@@ -10,9 +10,16 @@ import Navbar from './components/Navbar.jsx';
 import Home from './pages/Home.jsx';
 import Signup from './pages/Signup.jsx';
 import Login from './pages/Login.jsx';
+import { Context } from './store/appContext.jsx';
 
 const AppContent = () => {
   const location = useLocation();
+  const { actions } = useContext(Context);
+
+  useEffect(() => {
+    // Al montar el componente principal
+    actions.restoreSession();
+  }, []);
 
   //Esto sirve para ocultar ciertas rutas y que no se muestre el footer por ejemplo
   const hideNavbar = ['/login', '/signup'].includes(location.pathname);
