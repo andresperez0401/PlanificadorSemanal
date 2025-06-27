@@ -32,7 +32,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_APIKEY")
 
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 
-print(f"TW_SID: {TW_SID}, TW_FROM: {TW_FROM}, OPENAI_API_KEY: {OPENAI_API_KEY}")
+# print(f"TW_SID: {TW_SID}, TW_FROM: {TW_FROM}, OPENAI_API_KEY: {OPENAI_API_KEY}")
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 twilio_client = TwilioClient(TW_SID, TW_TOKEN)
 
