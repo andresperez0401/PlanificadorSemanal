@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from api.models import db, Usuario, Tarea  
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
 from datetime import timedelta, datetime, date
-import locale
+
 
 
 load_dotenv()
@@ -23,7 +23,6 @@ CORS(app,
      expose_headers=["Content-Type", "Authorization"],
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
-locale.setlocale(locale.LC_TIME, 'Spanish_Spain')
 
 # Twilio y OpenAI desde .env
 TW_SID   = os.getenv('TWILIO_ACCOUNTSID')
@@ -393,7 +392,7 @@ def whatsapp_webhook():
         db.session.add(new_task)
         db.session.commit()
 
-        fecha_formateada = new_task.fecha.strftime("%A %d de %B").capitalize()
+        fecha_formateada = new_task.fecha.strftime("%A %d de %B")
         hora_formateada  = new_task.horaInicio.strftime("%H:%M")
         msg = f"✅ Tarea creada:\n📌 {new_task.titulo}\n📅 {fecha_formateada} 🕒 {hora_formateada}\n📂 {new_task.etiqueta}"
 
