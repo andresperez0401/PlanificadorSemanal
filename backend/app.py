@@ -25,8 +25,8 @@ CORS(app,
 
 
 # Twilio y OpenAI desde .env
-TW_SID   = os.getenv('TWILIO_ACCOUNTSID')
-TW_TOKEN = os.getenv('TWILIO_AUTHTOKEN')
+TW_SID   = os.getenv('TWILIO_ACCOUNT_SID')
+TW_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 TW_FROM  = os.getenv('TWILIO_WHATSAPP_NUMBER')
 OPENAI_API_KEY = os.getenv("OPENAI_APIKEY")
 
