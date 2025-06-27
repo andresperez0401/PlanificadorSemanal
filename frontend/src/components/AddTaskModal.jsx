@@ -31,7 +31,11 @@ export default function AddTaskModal({ isOpen, onClose, onSave, defaultDate }) {
   useEffect(() => {
     if (isOpen) {
       setTitle('');
-      setDate(defaultDate || todayStr);
+      setDate(
+      defaultDate 
+        ? defaultDate.split('T')[0]   // ✅ <- solo "YYYY-MM-DD"
+        : todayStr
+      );
       setStartTime('09:00');
       setEndTime('10:00');
       setTag(tags[0]);

@@ -113,19 +113,26 @@ const getState = ({ getStore, getActions, setStore }) => {
         if (!token) return;
         
         try {
+          console.log("Obteniendo tareas del backend:", `${import.meta.env.VITE_BACKEND_URL}tareas`, "con token:", token);
           const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}tareas`, {
+            method: 'GET',
             headers: {
-              'Authorization': `Bearer ${token}`
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
             }
           });
           
+         
           const data = await response.json();
           
+          console.log("Respuesta del backend:", data.tareas);
+
           if (!response.ok) {
             throw new Error(data.error);
           }
           
-          setStore({ tasks: data });
+          setStore({ tasks: data.tareas });
 
           return {
             success: true,

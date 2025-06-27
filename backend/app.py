@@ -10,12 +10,20 @@ from dotenv import load_dotenv
 from api.models import db, Usuario, Tarea  
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
 from datetime import timedelta, datetime, date
+import locale
 
 
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True) # Permite solicitudes desde otros orígenes (React)
+CORS(app,
+     resources={r"/*": {"origins": "*"}},
+     supports_credentials=False,
+     allow_headers=["Content-Type", "Authorization"],
+     expose_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+
+locale.setlocale(locale.LC_TIME, 'Spanish_Spain')
 
 # Twilio y OpenAI desde .env
 TW_SID   = os.getenv('TWILIO_ACCOUNTSID')
@@ -220,7 +228,10 @@ def obtener_tareas():
     
     # Obtenemos las tareas del usuario autenticado
     tareas = user.tareas
-    return jsonify([t.serialize() for t in tareas]), 200
+    return jsonify({
+        "success": True,
+        "tareas": [t.serialize() for t in tareas]  # Envuelve en objeto
+    }), 200
 
 
 # Ruta para crear una nueva tarea
@@ -276,7 +287,7 @@ def crear_tarea():
 
         # Enviar mensaje de WhatsApp al usuario
         if user.telefono.startswith('+'):
-            send_message({user.telefono},
+            send_message(user.telefono,
                 f"Nueva tarea: {nueva_tarea.titulo} ({nueva_tarea.etiqueta}) "
                 f"para {nueva_tarea.fecha} {nueva_tarea.horaInicio}-{nueva_tarea.horaFin}"
             )
@@ -366,6 +377,10 @@ def whatsapp_webhook():
         if not task_data:
             send_message(from_number, "❌ No pude entender la tarea. Intenta describirla de otra forma.")
             return "Error IA", 200
+        
+        if not es_fecha_valida(task_data["date"]):
+            send_message(from_number, "❌ No pude entender la fecha. Intentá usar frases como 'mañana', 'el 2 de julio', etc.")
+            return "Fecha inválida", 200
 
         new_task = Tarea(
             idUsuario=user.idUsuario,
@@ -378,7 +393,7 @@ def whatsapp_webhook():
         db.session.add(new_task)
         db.session.commit()
 
-        fecha_formateada = new_task.fecha.strftime("%A %d de %B")
+        fecha_formateada = new_task.fecha.strftime("%A %d de %B").capitalize()
         hora_formateada  = new_task.horaInicio.strftime("%H:%M")
         msg = f"✅ Tarea creada:\n📌 {new_task.titulo}\n📅 {fecha_formateada} 🕒 {hora_formateada}\n📂 {new_task.etiqueta}"
 
@@ -403,104 +418,6 @@ def whatsapp_webhook():
     
 
 # Funcion para categorizar y  obtener datos con IA Deepseek
-def extract_task_fields_from_prompt(text):
-    try:
-        today = datetime.now().date()
-        prompt = f"""
-            Sos un asistente que transforma descripciones de tareas en objetos JSON con formato preciso. Recibís frases informales, en español o spanglish, y devolvés exclusivamente un JSON con estos campos:
-
-            - "title": título corto de la tarea
-            - "date": fecha en formato YYYY-MM-DD (puede inferirse de palabras como "mañana", "pasado mañana", "lunes", "el 28", etc.)
-            - "hour": hora de inicio en formato 24h HH:MM (ejemplo: 14:30)
-            - "endHour": hora de finalización en formato 24h HH:MM. Si no está clara, sumá 1 hora a "hour"
-            - "category": elegí una sola categoría de esta lista exacta (en mayúscula inicial): Personal, Trabajo, Estudio, Hogar, Salud, Otros
-
-            ⚠️ Reglas clave:
-            - No uses fechas anteriores a {today}.
-            - Convertí palabras como "mañana", "pasado mañana" a fechas reales:
-                - "mañana" → {today + timedelta(days=1)}
-                - "pasado mañana" → {today + timedelta(days=2)}
-            - Si dicen solo la hora ("a las 9"), asumí que es AM. Si dicen "a la noche", asumí PM.
-            - Si falta hora fin, sumá 1 hora a la de inicio (pero nunca menor).
-            - No incluyas ningún texto explicativo. Solo el JSON válido.
-            - El JSON debe estar bien formado, sin comentarios ni saltos innecesarios.
-
-            ✍️ Ejemplos:
-
-            Entrada: "Tengo que ir al médico mañana a las 10"
-            → JSON:
-            {{
-            "title": "Ir al médico",
-            "date": "{(today + timedelta(days=1)).strftime('%Y-%m-%d')}",
-            "hour": "10:00",
-            "endHour": "11:00",
-            "category": "Salud"
-            }}
-
-            Entrada: "Clase de inglés el sábado a las 15"
-            → JSON:
-            {{
-            "title": "Clase de inglés",
-            "date": "[calculá la próxima fecha que sea sábado]",
-            "hour": "15:00",
-            "endHour": "16:00",
-            "category": "Estudio"
-            }}
-
-            Descripción original: "{text}"
-            """
-
-        # Configuración para DeepSeek API
-        url = "https://api.deepseek.com/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {DEEPSEEK_API_KEY}",  # Usa la variable con f-string
-            "Content-Type": "application/json"
-        }
-        data = {
-            "model": "deepseek-chat",
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 150,
-            "temperature": 0.2,
-            "stream": False
-        }
-
-        response = requests.post(url, headers=headers, json=data)
-        if response.status_code != 200:
-            print(f"Error en DeepSeek API: {response.status_code} - {response.text}")
-            return None
-        
-        response_data = response.json()
-
-        if not response_data.get('choices') or not response_data['choices']:
-            print("Respuesta sin choices:", response_data)
-            return None
-        
-        # Extraer el contenido del JSON
-        content = response_data['choices'][0]['message']['content']
-        
-        # Limpiar posibles espacios y saltos de línea
-        content = content.strip()
-        
-        # Manejar casos donde la respuesta pueda incluir texto adicional
-        if content.startswith('{') and content.endswith('}'):
-            return json.loads(content)
-        else:
-            # Intentar extraer solo el JSON si hay texto adicional
-            start = content.find('{')
-            end = content.rfind('}') + 1
-            if start != -1 and end != 0:
-                json_str = content[start:end]
-                return json.loads(json_str)
-            else:
-                print(f"No se pudo extraer JSON de: {content}")
-                return None
-
-    except Exception as e:
-        print(f"Error en DeepSeek: {e}")
-        return None
-
-
-# Funcion para categorizar y  obtener datos con IA chatgpt
 # def extract_task_fields_from_prompt(text):
 #     try:
 #         today = datetime.now().date()
@@ -548,19 +465,167 @@ def extract_task_fields_from_prompt(text):
 #             Descripción original: "{text}"
 #             """
 
+#         # Configuración para DeepSeek API
+#         url = "https://api.deepseek.com/v1/chat/completions"
+#         headers = {
+#             "Authorization": f"Bearer {DEEPSEEK_API_KEY}",  # Usa la variable con f-string
+#             "Content-Type": "application/json"
+#         }
+#         data = {
+#             "model": "deepseek-chat",
+#             "messages": [{"role": "user", "content": prompt}],
+#             "max_tokens": 150,
+#             "temperature": 0.2,
+#             "stream": False
+#         }
 
-#         response = openai_client.chat.completions.create(
-#             model="gpt-3.5-turbo",
-#             messages=[{"role": "user", "content": prompt}],
-#             max_tokens=150,
-#             temperature=0.2
-#         )
+#         response = requests.post(url, headers=headers, json=data)
+#         if response.status_code != 200:
+#             print(f"Error en DeepSeek API: {response.status_code} - {response.text}")
+#             return None
+        
+#         response_data = response.json()
 
-#         import json
-#         return json.loads(response.choices[0].message.content.strip())
+#         if not response_data.get('choices') or not response_data['choices']:
+#             print("Respuesta sin choices:", response_data)
+#             return None
+        
+#         # Extraer el contenido del JSON
+#         content = response_data['choices'][0]['message']['content']
+        
+#         # Limpiar posibles espacios y saltos de línea
+#         content = content.strip()
+        
+#         # Manejar casos donde la respuesta pueda incluir texto adicional
+#         if content.startswith('{') and content.endswith('}'):
+#             return json.loads(content)
+#         else:
+#             # Intentar extraer solo el JSON si hay texto adicional
+#             start = content.find('{')
+#             end = content.rfind('}') + 1
+#             if start != -1 and end != 0:
+#                 json_str = content[start:end]
+#                 return json.loads(json_str)
+#             else:
+#                 print(f"No se pudo extraer JSON de: {content}")
+#                 return None
+
 #     except Exception as e:
-#         print(f"Error en OpenAI: {e}")
+#         print(f"Error en DeepSeek: {e}")
 #         return None
+
+
+def es_fecha_valida(fecha_str):
+    try:
+        datetime.strptime(fecha_str, "%Y-%m-%d")
+        return True
+    except ValueError:
+        return False
+
+# Funcion para categorizar y  obtener datos con IA chatgpt
+def extract_task_fields_from_prompt(text):
+    try:
+        today = datetime.now().date()
+        prompt = f"""
+            Sos un asistente que transforma descripciones de tareas en objetos JSON con formato preciso. Recibís frases informales, en español o spanglish, y devolvés exclusivamente un JSON con estos campos:
+
+            - "title": título corto de la tarea
+            - "date": fecha en formato YYYY-MM-DD (puede inferirse de palabras como "mañana", "pasado mañana", "lunes", "el 28", etc.)
+            - "hour": hora de inicio en formato 24h HH:MM (ejemplo: 14:30)
+            - "endHour": hora de finalización en formato 24h HH:MM. Si no está clara, sumá 1 hora a "hour"
+            - "category": elegí una sola categoría de esta lista exacta (en mayúscula inicial): Personal, Trabajo, Estudio, Hogar, Salud, Otros
+
+            ⚠️ Reglas clave:
+            - No uses fechas anteriores a {today}.
+            - Convertí palabras como "mañana", "pasado mañana" a fechas reales:
+                - "mañana" → {today + timedelta(days=1)}
+                - "pasado mañana" → {today + timedelta(days=2)}
+            - Si dicen solo la hora ("a las 9"), asumí que es AM. Si dicen "a la noche", asumí PM.
+            - Si falta hora fin, sumá 1 hora a la de inicio (pero nunca menor).
+            - No incluyas ningún texto explicativo. Solo el JSON válido.
+            - El JSON debe estar bien formado, sin comentarios ni saltos innecesarios.
+            - Si te dicen proximo sabado, o proximo dia o lo que sea, tu encargate de devolver la fecha correcta, no pongas [calculá la próxima fecha que sea sábado] ni nada por el estilo. DEvuelve la fehca con el formato especififcado.
+            - Intrepreta lo que te dicen, si faltan datos tu agregalo smanualmente calculando lo que falta, por ejemplo si te dicen "a las 10" vos poné "10:00" y "11:00" como hora de finalización, o si te dicen "el lunes a las 9" vos poné la fecha del próximo lunes y la hora de inicio y fin.
+            - Necesito que siempre registres los datos completos.
+
+            Entrada: "Clase de inglés el sábado a las 15"
+            → JSON:
+            {{
+            "title": "Clase de inglés",
+            "date": "2025-07-05",  # reemplazá por el próximo sábado dinámico
+            "hour": "15:00",
+            "endHour": "16:00",
+            "category": "Estudio"
+            }}
+
+            - Si te piden un día como "sábado", devolvé la PRÓXIMA fecha real que sea sábado (en formato YYYY-MM-DD)
+            ejemplo : next_saturday = next_weekday_date("sábado").strftime("%Y-%m-%d")
+
+            Entrada: "Clase de inglés el sábado a las 15"
+            → JSON:
+            {{
+            "title": "Clase de inglés",
+            "date": "2025-07-05",  # reemplazá por el próximo sábado dinámico
+            "hour": "15:00",
+            "endHour": "16:00",
+            "category": "Estudio"
+            }}
+
+            Necesito que sigas tal cual te digo 
+
+
+            ✍️ Ejemplos:
+
+            Entrada: "Tengo que ir al médico mañana a las 10"
+            → JSON:
+            {{
+            "title": "Ir al médico",
+            "date": "{(today + timedelta(days=1)).strftime('%Y-%m-%d')}",
+            "hour": "10:00",
+            "endHour": "11:00",
+            "category": "Salud"
+            }}
+
+            Entrada: "Clase de inglés el sábado a las 15"
+            → JSON:
+            {{
+            "title": "Clase de inglés",
+            "date": "[calculá la próxima fecha que sea sábado]",
+            "hour": "15:00",
+            "endHour": "16:00",
+            "category": "Estudio"
+            }}
+
+            Descripción original: "{text}"
+            """
+
+
+        response = openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.2
+        )
+
+        import json
+        return json.loads(response.choices[0].message.content.strip())
+    except Exception as e:
+        print(f"Error en OpenAI: {e}")
+        return None
+    
+
+def next_weekday_date(dia_nombre):
+    dias = {
+        "lunes": 0, "martes": 1, "miércoles": 2,
+        "jueves": 3, "viernes": 4, "sábado": 5, "domingo": 6
+    }
+    today = datetime.now().date()
+    target = dias.get(dia_nombre.lower(), None)
+    if target is None:
+        return None
+    days_a_sumar = (target - today.weekday() + 7) % 7
+    return today + timedelta(days=days_a_sumar or 7)
+
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))

@@ -46,7 +46,7 @@ class Tarea(db.Model):
         return {
             'idTarea': self.idTarea,
             'titulo': self.titulo,
-            'fecha': self.fecha.isoformat(),
+            'fecha': self.fecha.strftime('%Y-%m-%d'),
             'horaInicio': self.horaInicio.strftime('%H:%M'),
             'horaFin': self.horaFin.strftime('%H:%M'),
             'etiqueta': self.etiqueta,

@@ -37,13 +37,18 @@ export default function Home() {
 
     // Convertir tareas a eventos para el calendario
     useEffect(() => {
+
+      console.log("Tareas cargadas:", store.tasks);
+
       const newEvents = store.tasks.map(task => {
         const color = tagColors[task.etiqueta] || { bg: '#607D8B', border: '#455A64' };
+
+        const fechaSolo = task.fecha.split('T')[0];
         return {
           id: task.idTarea,
           title: task.titulo,
-          start: `${task.fecha}T${task.horaInicio}`,
-          end: `${task.fecha}T${task.horaFin}`,
+          start: `${fechaSolo}T${task.horaInicio}`,
+          end: `${fechaSolo}T${task.horaFin}`,
           backgroundColor: color.bg,
           borderColor: color.border,
           textColor: color.text || '#FFF',
