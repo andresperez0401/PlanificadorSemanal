@@ -1,4 +1,5 @@
 import os
+import requests
 from openai import OpenAI
 from twilio.rest import Client as TwilioClient
 import json
@@ -17,12 +18,16 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True) # Permite solicitudes desde otros orígenes (React)
 
 # Twilio y OpenAI desde .env
-TW_SID   = os.getenv('TWILIO_ACCOUNT_SID')
-TW_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
+TW_SID   = os.getenv('TWILIO_ACCOUNTSID')
+TW_TOKEN = os.getenv('TWILIO_AUTHTOKEN')
 TW_FROM  = os.getenv('TWILIO_WHATSAPP_NUMBER')
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_APIKEY")
+
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+
+print(f"TW_SID: {TW_SID}, TW_FROM: {TW_FROM}, OPENAI_API_KEY: {OPENAI_API_KEY}")
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
-twilio = TwilioClient(TW_SID, TW_TOKEN)
+twilio_client = TwilioClient(TW_SID, TW_TOKEN)
 
 #----------------------------------------------------- Base de Datos -----------------------------------------------------------------
 
@@ -271,7 +276,7 @@ def crear_tarea():
 
         # Enviar mensaje de WhatsApp al usuario
         if user.telefono.startswith('+'):
-            send_whatsapp(f'whatsapp:{user.telefono}',
+            send_message({user.telefono},
                 f"Nueva tarea: {nueva_tarea.titulo} ({nueva_tarea.etiqueta}) "
                 f"para {nueva_tarea.fecha} {nueva_tarea.horaInicio}-{nueva_tarea.horaFin}"
             )
@@ -321,123 +326,241 @@ def eliminar_tarea(id_tarea):
 
 # --------------------------------------------------------------------------- WEBHOOK WHATSAPP ---------------------------------------------------------------------
 
-# ── helpers ────────────────────────────────────────────────────────────────
-def send_whatsapp(to, body):
-    twilio.messages.create(
-        from_=f"whatsapp:{TW_FROM}",
+
+# ---- Para enviar enviar mensajes de WhatsApp
+def send_message(to, body):
+    twilio_client.messages.create(
+        from_=TW_FROM,
         to=f"whatsapp:{to}",
         body=body
     )
 
-def classify_task(text):
-    r = openai_client.chat.completions.create(
-      model="gpt-4",
-      messages=[
-        {"role":"system","content":"Categorizador: Trabajo, Personal,…"},
-        {"role":"user","content": text}
-      ]
-    )
-    return r.choices[0].message.content
 
-def parse_task_with_ai(text: str) -> dict:
-    resp = openai_client.chat.completions.create(
-      model="gpt-4",
-      messages=[{"role":"user","content":
-        "Devuélveme un JSON con keys: title, fecha(YYYY-MM-DD), horaInicio(HH:MM), horaFin(HH:MM) de este mensaje: "
-        + text
-      }]
-    )
-    return json.loads(resp.choices[0].message.content)
-
-# ── webhook ────────────────────────────────────────────────────────────────
-@app.route('/api/whatsapp', methods=['POST'])
+# Ruta para recibir mensajes de WhatsApp
+@app.route("/whatsapp-webhook", methods=["POST"])
 def whatsapp_webhook():
- # logging
-    app.logger.info(f"🔔 Webhook hit: From={request.values.get('From')} Body={request.values.get('Body')}")
+    from_number = request.form.get('From', '').replace('whatsapp:', '')
+    body = request.form.get('Body', '').strip().lower()
+
+    if not from_number or not body:
+        return "Faltan datos", 400
+
+    user = Usuario.query.filter_by(telefono=from_number).first()
+    if not user:
+        send_message(from_number, "🚫 No estás registrado. Por favor regístrate para usar el Organizapp.")
+        return "Usuario no registrado", 200
+
+    if body in ["hola", "menu", "opciones", "que tal", "buenas", "buenas tardes", "buenas noches", "Hola"]:
+        send_message(from_number,
+            "👋 Hola " + user.nombre + "! , elige una opción:\n1️⃣ Crear tarea\n2️⃣ Ver tareas pendientes\n\nResponde con 1 o 2.")
+        return "Menú enviado", 200
+
+    elif body.startswith("1") or "crear tarea" in body:
+        send_message(from_number, "✍️ Por favor describe la tarea. Ejemplo:\n'Agendar paseo con el perro mañana a las 10 AM'")
+        return "Esperando descripción", 200
+    
+    # elif body.startswith("3") or "registrar usuario" in body or "Registrar" in body:
+
+    elif any(word in body for word in ["mañana", "pasado", "am", "pm", "agendar", "a las", "para el", "el ", "día "]):
+        task_data = extract_task_fields_from_prompt(body)
+        if not task_data:
+            send_message(from_number, "❌ No pude entender la tarea. Intenta describirla de otra forma.")
+            return "Error IA", 200
+
+        new_task = Tarea(
+            idUsuario=user.idUsuario,
+            titulo=task_data["title"],
+            fecha=datetime.strptime(task_data["date"], "%Y-%m-%d").date(),
+            horaInicio=datetime.strptime(task_data["hour"], "%H:%M").time(),
+            horaFin=datetime.strptime(task_data["endHour"], "%H:%M").time(),
+            etiqueta=task_data["category"]
+        )
+        db.session.add(new_task)
+        db.session.commit()
+
+        fecha_formateada = new_task.fecha.strftime("%A %d de %B")
+        hora_formateada  = new_task.horaInicio.strftime("%H:%M")
+        msg = f"✅ Tarea creada:\n📌 {new_task.titulo}\n📅 {fecha_formateada} 🕒 {hora_formateada}\n📂 {new_task.etiqueta}"
+
+        send_message(from_number, msg)
+        return "Tarea creada", 201
+
+    elif body.startswith("2") or "ver tarea" in body or "pendiente" in body:
+        tasks = Tarea.query.filter_by(idUsuario=user.idUsuario).all()
+        if not tasks:
+            send_message(from_number, "📭 No tienes tareas pendientes.")
+        else:
+            listado = "\n".join([
+                f"📌 {t.titulo} ({t.fecha.strftime('%d/%m')} a las {t.horaInicio.strftime('%H:%M')})"
+                for t in tasks
+            ])
+            send_message(from_number, f"📋 Tus tareas pendientes:\n{listado}")
+        return "Tareas listadas", 200
+
+    else:
+        send_message(from_number, "🤖 No entendí. Escribí 'menu' para comenzar.")
+        return "Sin coincidencia", 200
     
 
-    raw_from = request.values.get('From','')   # "whatsapp:+123..."
-    phone    = raw_from.replace('whatsapp:','')# "+123..."
-    body     = request.values.get('Body','').strip()
-
-    hoy = date.today()
-
-    # 1) REGISTRAR
-    if body.upper().startswith('REGISTRAR '):
-        parts = body.split()
-        if len(parts)==3:
-            email, pwd = parts[1], parts[2]
-            if Usuario.query.filter_by(email=email).first():
-                send_whatsapp(phone, "❌ Email ya registrado.")
-            else:
-                u = Usuario(
-                  nombre=email.split('@')[0],
-                  email=email,
-                  clave=pwd,
-                  telefono=phone
-                )
-                db.session.add(u); db.session.commit()
-                send_whatsapp(phone, "✅ ¡Registrado! Bienvenido.")
-        else:
-            send_whatsapp(phone, "ℹ️ Usa: REGISTRAR tu_email tu_contraseña")
-        return ('',200)
-
-    # 2) ¿Usuario existe?
-    u = Usuario.query.filter_by(telefono=phone).first()
-    if not u:
-        send_whatsapp(phone,
-          "❌ No estás registrado. Envía:\n"
-          "REGISTRAR tu_email@ejemplo.com tu_contraseña"
-        )
-        return ('',200)
-
-    cmd = body.upper()
-    # 3) TAREAS HOY / SEMANA
-    if cmd in ('TAREAS HOY','TAREAS SEMANA'):
-        
-        tareas = u.tareas
-        if cmd=='TAREAS HOY':
-            filt = [t for t in tareas if t.fecha==hoy]
-        else:
-            inicio_semana = hoy - timedelta(days=hoy.weekday())
-            filt = [t for t in tareas
-                    if inicio_semana<=t.fecha<inicio_semana+timedelta(7)]
-        if not filt:
-            send_whatsapp(phone, "ℹ️ No tienes tareas en este período.")
-        else:
-            lines = [f"{t.fecha} {t.horaInicio}-{t.horaFin}: {t.titulo}"
-                     for t in filt]
-            send_whatsapp(phone, "🗓️ Tus tareas:\n"+"\n".join(lines))
-        return ('',200)
-
-    # 4) TEXTO LIBRE → CREAR TAREA por IA
-    categ = classify_task(body)
+# Funcion para categorizar y  obtener datos con IA Deepseek
+def extract_task_fields_from_prompt(text):
     try:
-        d = parse_task_with_ai(body)
-        hi = datetime.strptime(d['horaInicio'],'%H:%M').time()
-        hf = datetime.strptime(d['horaFin'   ],'%H:%M').time()
-        # mínimo 1h
-        if (datetime.combine(hoy,hf)-datetime.combine(hoy,hi)).seconds<3600:
-            hf = (datetime.combine(hoy,hi)+timedelta(hours=1)).time()
-        tarea = Tarea(
-          titulo=d['title'],
-          fecha=datetime.strptime(d['fecha'],'%Y-%m-%d').date(),
-          horaInicio=hi, horaFin=hf,
-          etiqueta=categ, idUsuario=u.idUsuario
-        )
-        db.session.add(tarea); db.session.commit()
-        send_whatsapp(phone,
-          f"✅ Tarea '{tarea.titulo}' en '{categ}' "
-          f"para {tarea.fecha} {tarea.horaInicio}-{tarea.horaFin}"
-        )
-    except Exception:
-        send_whatsapp(phone,
-          "❓ No entendí tu mensaje. Usa:\n"
-          "Título para YYYY-MM-DD HH:MM-HH:MM"
-        )
-    return ('',200)
+        today = datetime.now().date()
+        prompt = f"""
+            Sos un asistente que transforma descripciones de tareas en objetos JSON con formato preciso. Recibís frases informales, en español o spanglish, y devolvés exclusivamente un JSON con estos campos:
+
+            - "title": título corto de la tarea
+            - "date": fecha en formato YYYY-MM-DD (puede inferirse de palabras como "mañana", "pasado mañana", "lunes", "el 28", etc.)
+            - "hour": hora de inicio en formato 24h HH:MM (ejemplo: 14:30)
+            - "endHour": hora de finalización en formato 24h HH:MM. Si no está clara, sumá 1 hora a "hour"
+            - "category": elegí una sola categoría de esta lista exacta (en mayúscula inicial): Personal, Trabajo, Estudio, Hogar, Salud, Otros
+
+            ⚠️ Reglas clave:
+            - No uses fechas anteriores a {today}.
+            - Convertí palabras como "mañana", "pasado mañana" a fechas reales:
+                - "mañana" → {today + timedelta(days=1)}
+                - "pasado mañana" → {today + timedelta(days=2)}
+            - Si dicen solo la hora ("a las 9"), asumí que es AM. Si dicen "a la noche", asumí PM.
+            - Si falta hora fin, sumá 1 hora a la de inicio (pero nunca menor).
+            - No incluyas ningún texto explicativo. Solo el JSON válido.
+            - El JSON debe estar bien formado, sin comentarios ni saltos innecesarios.
+
+            ✍️ Ejemplos:
+
+            Entrada: "Tengo que ir al médico mañana a las 10"
+            → JSON:
+            {{
+            "title": "Ir al médico",
+            "date": "{(today + timedelta(days=1)).strftime('%Y-%m-%d')}",
+            "hour": "10:00",
+            "endHour": "11:00",
+            "category": "Salud"
+            }}
+
+            Entrada: "Clase de inglés el sábado a las 15"
+            → JSON:
+            {{
+            "title": "Clase de inglés",
+            "date": "[calculá la próxima fecha que sea sábado]",
+            "hour": "15:00",
+            "endHour": "16:00",
+            "category": "Estudio"
+            }}
+
+            Descripción original: "{text}"
+            """
+
+        # Configuración para DeepSeek API
+        url = "https://api.deepseek.com/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {DEEPSEEK_API_KEY}",  # Usa la variable con f-string
+            "Content-Type": "application/json"
+        }
+        data = {
+            "model": "deepseek-chat",
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 150,
+            "temperature": 0.2,
+            "stream": False
+        }
+
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code != 200:
+            print(f"Error en DeepSeek API: {response.status_code} - {response.text}")
+            return None
+        
+        response_data = response.json()
+
+        if not response_data.get('choices') or not response_data['choices']:
+            print("Respuesta sin choices:", response_data)
+            return None
+        
+        # Extraer el contenido del JSON
+        content = response_data['choices'][0]['message']['content']
+        
+        # Limpiar posibles espacios y saltos de línea
+        content = content.strip()
+        
+        # Manejar casos donde la respuesta pueda incluir texto adicional
+        if content.startswith('{') and content.endswith('}'):
+            return json.loads(content)
+        else:
+            # Intentar extraer solo el JSON si hay texto adicional
+            start = content.find('{')
+            end = content.rfind('}') + 1
+            if start != -1 and end != 0:
+                json_str = content[start:end]
+                return json.loads(json_str)
+            else:
+                print(f"No se pudo extraer JSON de: {content}")
+                return None
+
+    except Exception as e:
+        print(f"Error en DeepSeek: {e}")
+        return None
 
 
+# Funcion para categorizar y  obtener datos con IA chatgpt
+# def extract_task_fields_from_prompt(text):
+#     try:
+#         today = datetime.now().date()
+#         prompt = f"""
+#             Sos un asistente que transforma descripciones de tareas en objetos JSON con formato preciso. Recibís frases informales, en español o spanglish, y devolvés exclusivamente un JSON con estos campos:
+
+#             - "title": título corto de la tarea
+#             - "date": fecha en formato YYYY-MM-DD (puede inferirse de palabras como "mañana", "pasado mañana", "lunes", "el 28", etc.)
+#             - "hour": hora de inicio en formato 24h HH:MM (ejemplo: 14:30)
+#             - "endHour": hora de finalización en formato 24h HH:MM. Si no está clara, sumá 1 hora a "hour"
+#             - "category": elegí una sola categoría de esta lista exacta (en mayúscula inicial): Personal, Trabajo, Estudio, Hogar, Salud, Otros
+
+#             ⚠️ Reglas clave:
+#             - No uses fechas anteriores a {today}.
+#             - Convertí palabras como "mañana", "pasado mañana" a fechas reales:
+#                 - "mañana" → {today + timedelta(days=1)}
+#                 - "pasado mañana" → {today + timedelta(days=2)}
+#             - Si dicen solo la hora ("a las 9"), asumí que es AM. Si dicen "a la noche", asumí PM.
+#             - Si falta hora fin, sumá 1 hora a la de inicio (pero nunca menor).
+#             - No incluyas ningún texto explicativo. Solo el JSON válido.
+#             - El JSON debe estar bien formado, sin comentarios ni saltos innecesarios.
+
+#             ✍️ Ejemplos:
+
+#             Entrada: "Tengo que ir al médico mañana a las 10"
+#             → JSON:
+#             {{
+#             "title": "Ir al médico",
+#             "date": "{(today + timedelta(days=1)).strftime('%Y-%m-%d')}",
+#             "hour": "10:00",
+#             "endHour": "11:00",
+#             "category": "Salud"
+#             }}
+
+#             Entrada: "Clase de inglés el sábado a las 15"
+#             → JSON:
+#             {{
+#             "title": "Clase de inglés",
+#             "date": "[calculá la próxima fecha que sea sábado]",
+#             "hour": "15:00",
+#             "endHour": "16:00",
+#             "category": "Estudio"
+#             }}
+
+#             Descripción original: "{text}"
+#             """
+
+
+#         response = openai_client.chat.completions.create(
+#             model="gpt-3.5-turbo",
+#             messages=[{"role": "user", "content": prompt}],
+#             max_tokens=150,
+#             temperature=0.2
+#         )
+
+#         import json
+#         return json.loads(response.choices[0].message.content.strip())
+#     except Exception as e:
+#         print(f"Error en OpenAI: {e}")
+#         return None
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
