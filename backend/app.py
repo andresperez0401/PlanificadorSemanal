@@ -378,7 +378,7 @@ def whatsapp_webhook():
 
     if body in ["hola", "menu", "opciones", "que tal", "buenas", "buenas tardes", "buenas noches", "Hola"]:
         send_message(from_number,
-            "👋 Hola " + user.nombre + "! , elige una opción:\n1️⃣ Crear tarea\n2️⃣ Ver tareas pendientes\n\nResponde con 1 o 2.")
+            "👋 Hola " + user.nombre + "! , elige una opción:\n1️⃣ Crear tarea (Deshabilitada - en desarrollo) \n2️⃣ Ver tareas pendientes\n\nResponde con 1 o 2.")
         return "Menú enviado", 200
 
     elif body.startswith("1") or "crear tarea" in body:
