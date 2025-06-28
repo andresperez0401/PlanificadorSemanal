@@ -29,13 +29,14 @@ TW_SID   = os.getenv('TWILIO_ACCOUNT_SID')
 TW_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 TW_FROM  = os.getenv('TWILIO_WHATSAPP_NUMBER')
 OPENAI_API_KEY = os.getenv("OPENAI_APIKEY")
+OPENAI_PROJECT_ID = os.getenv("OPENAI_PROJECT_ID")
 
 # print(f"TW_SID: {TW_SID}, TW_FROM: {TW_FROM}, OPENAI_API_KEY: {OPENAI_API_KEY}, TW_TOKEN: {TW_TOKEN}")
 
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 
 # print(f"TW_SID: {TW_SID}, TW_FROM: {TW_FROM}, OPENAI_API_KEY: {OPENAI_API_KEY}")
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
+openai_client = OpenAI(api_key=OPENAI_API_KEY,project=OPENAI_PROJECT_ID)
 twilio_client = TwilioClient(TW_SID, TW_TOKEN)
 
 #----------------------------------------------------- Base de Datos -----------------------------------------------------------------
