@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import '../styles/auth.css';
 import img from "../img/organiza-app.png";
 import { useContext } from 'react';
 import { Context } from '../store/appContext';
-import { useAlert}from '../hooks/useAlert.js';
+import { useAlert } from '../hooks/useAlert.js';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -32,8 +31,8 @@ export default function Login() {
       <div className="auth-container">
         <div className="auth-card">
           <div className="auth-header">
-            <div className="logo">
-                <img src={img} alt="Logo" className="logo" />
+            <div className="logo-container">
+              <img src={img} alt="Logo" className="logo" />
             </div>
             <h2 className="auth-title">Iniciar Sesión</h2>
           </div>

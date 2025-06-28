@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import '../styles/auth.css';
@@ -19,7 +18,6 @@ export default function Signup() {
 
   const { store, actions } = useContext(Context);
   const { success, error } = useAlert();
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,7 +49,6 @@ export default function Signup() {
     } else {
       error(register.message || 'Error al registrar usuario');
     }
-
   };
 
   return (
@@ -59,8 +56,8 @@ export default function Signup() {
       <div className="auth-container">
         <div className="auth-card">
           <div className="auth-header">
-            <div className="logo">
-                <img src={img} alt="Logo" className="logo" />
+            <div className="logo-container">
+              <img src={img} alt="Logo" className="logo" />
             </div>
             <h2 className="auth-title">Crear Cuenta</h2>
           </div>
