@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import CalendarView from '../components/CalendarView';
 import AddTaskModal from '../components/AddTaskModal';
+import TaskDetailModal from '../components/TaskDetailModal';
 import PhraseBanner from '../components/PhraseBanner';
 import { toast } from 'react-toastify';
 import '../styles/home.css';
 import { useEffect, useContext } from 'react';
 import { Context } from '../store/appContext';
 import { useAlert } from "../hooks/useAlert.js";
-
 
 const tagColors = {
   Trabajo:  { bg: '#4CAF50', border: '#388E3C' },
@@ -19,102 +19,113 @@ const tagColors = {
 
 export default function Home() {
   const [events, setEvents] = useState([]);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [modalDate, setModalDate] = useState(null);
+  const [selectedTask, setSelectedTask] = useState(null);
 
   const { error, success } = useAlert();
   const {store, actions} = useContext(Context);
 
-  //---------------------------------------------------------------------------------------------------------------------------
-  //Hooks UseEffect para cargar eventos desde el store
+  // Cargar tareas al montar el componente
+  useEffect(() => {
+    if (store.token) {
+      actions.getTasks();
+    }
+  }, [store.token]);
 
-    // Cargar tareas al montar el componente
-    useEffect(() => {
-      if (store.token) {
-        actions.getTasks();
-      }
-    }, [store.token]);
+  // Convertir tareas a eventos para el calendario
+  useEffect(() => {
+    const newEvents = store.tasks.map(task => {
+      const color = tagColors[task.etiqueta] || { bg: '#607D8B', border: '#455A64' };
 
-    // Convertir tareas a eventos para el calendario
-    useEffect(() => {
+      const fechaSolo = task.fecha.split('T')[0];
+      return {
+        id: task.idTarea,
+        title: task.titulo,
+        start: `${fechaSolo}T${task.horaInicio}`,
+        end: `${fechaSolo}T${task.horaFin}`,
+        backgroundColor: color.bg,
+        borderColor: color.border,
+        textColor: color.text || '#FFF',
+        extendedProps: { 
+          tag: task.etiqueta,
+          descripcion: task.descripcion,
+          imageUrl: task.imageUrl
+        }
+      };
+    });
+    setEvents(newEvents);
+  }, [store.tasks]);
 
-      console.log("Tareas cargadas:", store.tasks);
-
-      const newEvents = store.tasks.map(task => {
-        const color = tagColors[task.etiqueta] || { bg: '#607D8B', border: '#455A64' };
-
-        const fechaSolo = task.fecha.split('T')[0];
-        return {
-          id: task.idTarea,
-          title: task.titulo,
-          start: `${fechaSolo}T${task.horaInicio}`,
-          end: `${fechaSolo}T${task.horaFin}`,
-          backgroundColor: color.bg,
-          borderColor: color.border,
-          textColor: color.text || '#FFF',
-          extendedProps: { tag: task.etiqueta }
-        };
-      });
-      setEvents(newEvents);
-    }, [store.tasks]);
-
-  //---------------------------------------------------------------------------------------------------------------------------
-
-  const openModal = (dateStr = null) => {
+  const openAddModal = (dateStr = null) => {
     setModalDate(dateStr);
-    setModalOpen(true);
+    setAddModalOpen(true);
   };
 
-  const closeModal = () => setModalOpen(false);
+  const closeAddModal = () => setAddModalOpen(false);
 
   const handleSave = async (taskData) => {
-
     if (!store.token) {
       error('Debe iniciar sesión para agregar tareas');
-      closeModal();
+      closeAddModal();
       return;
     }
 
     const savedTask = await actions.createTask({
       titulo: taskData.title,
+      descripcion: taskData.descripcion,
       fecha: taskData.date,
       horaInicio: taskData.startTime,
       horaFin: taskData.endTime,
-      etiqueta: taskData.tag
+      etiqueta: taskData.tag,
+      imageUrl: taskData.imageUrl || ''
     });
-
-    console.log('Datos de la tarea:', savedTask);
     
     if (savedTask.success) {
-      closeModal();
-      actions.getTasks(); // Actualizar tareas después de guardar
+      closeAddModal();
+      actions.getTasks();
       success('Tarea agregada correctamente');
     } else {
       error('Error al guardar tarea');
     }
   };
 
-
   const handleEventClick = info => {
+    const task = {
+      id: info.event.id,
+      title: info.event.title,
+      startTime: info.event.start.toTimeString().slice(0, 5),
+      endTime: info.event.end.toTimeString().slice(0, 5),
+      date: info.event.start.toISOString().split('T')[0],
+      tag: info.event.extendedProps.tag,
+      descripcion: info.event.extendedProps.descripcion,
+      imageUrl: info.event.extendedProps.imageUrl
+    };
+    
+    setSelectedTask(task);
+    setDetailModalOpen(true);
+  };
+
+  const handleDeleteTask = async (taskId) => {
     toast.info(
       <div>
-        <p>¿Quiere eliminar la tarea: "{info.event.title}"?</p>
+        <p>¿Quiere eliminar esta tarea?</p>
         <div className="toast-actions">
           <button 
             className="toast-btn toast-btn-confirm"
             onClick={ async() => {
-              let result = await actions.deleteTask(Number(info.event.id));
+              let result = await actions.deleteTask(Number(taskId));
 
               if (!result.success) {
                 error('Error al eliminar la tarea');
                 return;
               }
 
-              // Actualizar tareas después de eliminar
               actions.getTasks();
               toast.dismiss();
               success('Tarea eliminada correctamente');
-              
+              setDetailModalOpen(false);
             }}
           >
             Sí
@@ -141,21 +152,28 @@ export default function Home() {
       <div className="calendar-section">
         <CalendarView
           events={events}
-          onDateClick={info => openModal(info.dateStr)}
+          onDateClick={info => openAddModal(info.dateStr)}
           onEventClick={handleEventClick}
         />
       </div>
 
-      <button className="floating-btn" onClick={() => openModal()}>
+      <button className="floating-btn" onClick={() => openAddModal()}>
         +
       </button>
 
       <AddTaskModal
-        isOpen={modalOpen}
+        isOpen={addModalOpen}
         defaultDate={modalDate}
         onSave={handleSave}
-        onClose={closeModal}
+        onClose={closeAddModal}
+      />
+      
+      <TaskDetailModal
+        isOpen={detailModalOpen}
+        task={selectedTask}
+        onClose={() => setDetailModalOpen(false)}
+        onDelete={handleDeleteTask} // Pasamos la función de eliminación
       />
     </div>
-  );
+  ); 
 }

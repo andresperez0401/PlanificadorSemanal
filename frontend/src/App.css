@@ -23,7 +23,7 @@ html, body {
 }
 
 body {
-  background: linear-gradient(135deg, #6cc0e7 0%, #f0f0f0 100%);
+  background: linear-gradient(135deg, #c4ecff 0%, #f0f0f0 100%);
   background-attachment: fixed; /* Fondo fijo */
   background-size: cover;
   min-height: 100vh;

@@ -274,8 +274,17 @@ def crear_tarea():
         if not user:
             return jsonify({'msg': 'Usuario no encontrado'}), 404
         
+
+        #Verificaamos si hay descripción, si no la hay, la dejamos en None
+        descripcion = data.get('descripcion', "Descripcion de la tarea" + data.get('titulo', ''))
+
+        #Verificamos qe haya imagen
+        imageUrl = data.get('imageUrl', "")
+        
         nueva_tarea = Tarea(
             titulo=data.get('titulo'),
+            descripcion=descripcion,
+            imageUrl=imageUrl,
             fecha=fecha,
             horaInicio=horaInicio,
             horaFin=horaFin,
@@ -386,6 +395,8 @@ def whatsapp_webhook():
         new_task = Tarea(
             idUsuario=user.idUsuario,
             titulo=task_data["title"],
+            descripcion = task_data["description"],
+            imageUrl = ("", None),
             fecha=datetime.strptime(task_data["date"], "%Y-%m-%d").date(),
             horaInicio=datetime.strptime(task_data["hour"], "%H:%M").time(),
             horaFin=datetime.strptime(task_data["endHour"], "%H:%M").time(),
@@ -548,7 +559,9 @@ def extract_task_fields_from_prompt(text):
             - Si te dicen proximo sabado, o proximo dia o lo que sea, tu encargate de devolver la fecha correcta, no pongas [calculá la próxima fecha que sea sábado] ni nada por el estilo. DEvuelve la fehca con el formato especififcado.
             - Intrepreta lo que te dicen, si faltan datos tu agregalo smanualmente calculando lo que falta, por ejemplo si te dicen "a las 10" vos poné "10:00" y "11:00" como hora de finalización, o si te dicen "el lunes a las 9" vos poné la fecha del próximo lunes y la hora de inicio y fin.
             - Necesito que siempre registres los datos completos.
-
+            - Tambien necesito que ahora interpretes la descripcion, es decir que en base a lo que te digan devuelvas tambein un campo decripcion en base al titulo
+            - Explciando un poco mejor la DESCRIPCION ES SUPER IMPORTANTE, por ejemplo si te dicen "Tengo que ir al médico mañana a las 10" vos poné "Ir al médico" como título y "Tengo que ir al médico" como descripción, o si te dicen "Clase de inglés el sábado a las 15" vos poné "Clase de inglés" como título y "Clase de inglés el sábado a las 15" como descripción.
+            
             Entrada: "Clase de inglés el sábado a las 15"
             → JSON:
             {{
@@ -557,6 +570,7 @@ def extract_task_fields_from_prompt(text):
             "hour": "15:00",
             "endHour": "16:00",
             "category": "Estudio"
+            "description": "Clase de inglés el sábado a las 15"
             }}
 
             - Si te piden un día como "sábado", devolvé la PRÓXIMA fecha real que sea sábado (en formato YYYY-MM-DD)
@@ -570,6 +584,7 @@ def extract_task_fields_from_prompt(text):
             "hour": "15:00",
             "endHour": "16:00",
             "category": "Estudio"
+            "description": "Clase de inglés el sábado a las 15"
             }}
 
             Necesito que sigas tal cual te digo 
@@ -585,6 +600,7 @@ def extract_task_fields_from_prompt(text):
             "hour": "10:00",
             "endHour": "11:00",
             "category": "Salud"
+            "description": "Tengo que ir al médico mañana a las 10"	
             }}
 
             Entrada: "Clase de inglés el sábado a las 15"

@@ -1,5 +1,5 @@
 .banner {
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  background: linear-gradient(135deg, #012f5c 0%, #000000 100%);
   color: white;
   padding: 1rem;
   border-radius: 12px;

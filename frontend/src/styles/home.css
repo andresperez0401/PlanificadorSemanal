@@ -4,7 +4,7 @@
   height: 100%;
   flex: 1;
   padding: 1.5rem;
-   background: linear-gradient(135deg, #6cc0e7 0%, #f0f0f0 100%);
+   background: linear-gradient(135deg, #e1f6ff 0%, #f0f0f0 100%);
 }
 
 .home-content {
@@ -30,7 +30,7 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  background: linear-gradient(135deg, #012f5c 0%, #000000 100%);
   color: white;
   border: none;
   box-shadow: 0 5px 20px rgba(67, 97, 238, 0.3);
@@ -45,6 +45,36 @@
 .floating-btn:hover {
   transform: translateY(-3px) scale(1.05);
   box-shadow: 0 8px 25px rgba(67, 97, 238, 0.4);
+}
+
+/* Añadir al final de home.css */
+.detail-modal-actions {
+  position: fixed;
+  bottom: 1rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  z-index: 2001;
+}
+
+.delete-task-btn {
+  background: #f44336;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+}
+
+.delete-task-btn:hover {
+  background: #d32f2f;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(244, 67, 54, 0.4);
 }
 
 @media (max-width: 768px) {

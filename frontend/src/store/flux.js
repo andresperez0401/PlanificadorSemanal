@@ -161,10 +161,12 @@ const getState = ({ getStore, getActions, setStore }) => {
             },
             body: JSON.stringify({
               titulo: taskData.titulo,
+              descripcion: taskData.descripcion,
               fecha: taskData.fecha,
               horaInicio: taskData.horaInicio,
               horaFin: taskData.horaFin,
-              etiqueta: taskData.etiqueta
+              etiqueta: taskData.etiqueta,
+              imageUrl: taskData.imageUrl || ''
             })
           });
           
