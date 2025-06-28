@@ -49,7 +49,7 @@ export default function Signup() {
       success('Registro exitoso! Bienvenido');
       navigate('/home');
     } else {
-      error('Error en registro');
+      error(register.message || 'Error al registrar usuario');
     }
 
   };

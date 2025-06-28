@@ -298,10 +298,14 @@ def crear_tarea():
 
         # Enviar mensaje de WhatsApp al usuario
         if user.telefono.startswith('+'):
-            send_message(user.telefono,
-                f"Nueva tarea: {nueva_tarea.titulo} ({nueva_tarea.etiqueta}) "
-                f"para {nueva_tarea.fecha} {nueva_tarea.horaInicio}-{nueva_tarea.horaFin}"
+            texto_whatsapp = (
+                "🆕 *Nueva Tarea Creada*\n\n"
+                f"📌 *Título:* {nueva_tarea.titulo}\n"
+                f"🗂️ *Categoría:* {nueva_tarea.etiqueta}\n"
+                f"📅 *Fecha:* {nueva_tarea.fecha.strftime('%Y-%m-%d')}\n"
+                f"⏰ *Hora:* {nueva_tarea.horaInicio.strftime('%H:%M')} - {nueva_tarea.horaFin.strftime('%H:%M')}\n"
             )
+            send_message(user.telefono, texto_whatsapp)
 
 
         return jsonify({"mensaje": "Tarea creada exitosamente", "tarea": nueva_tarea.serialize()}), 201
@@ -619,7 +623,7 @@ def extract_task_fields_from_prompt(text):
 
 
         response = openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=150,
             temperature=0.2

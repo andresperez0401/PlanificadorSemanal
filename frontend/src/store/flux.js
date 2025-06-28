@@ -57,27 +57,37 @@ const getState = ({ getStore, getActions, setStore }) => {
       signup: async (userData) => {
         setStore({ loading: true, error: null });
         try {
-          const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}usuario`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(userData)
-          });
-          
+          const response = await fetch(
+            `${import.meta.env.VITE_BACKEND_URL}usuario`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(userData)
+            }
+          );
+
           const data = await response.json();
-          
+
           if (!response.ok) {
+            // Lanza el mensaje exacto del backend
             throw new Error(data.error || 'Error en registro');
           }
 
+          // Si llegamos aquí, fue exitoso
+          setStore({ loading: false });
           return {
             success: true,
-            message: "Usuario registrado exitosamente",
+            message: 'Usuario registrado exitosamente'
           };
+
         } catch (error) {
+          // Detén el spinner
           setStore({ loading: false, error: error.message });
+
           return {
             success: false,
-            message: error.message || 'Error al registrar usuario',
+            // Aquí sí uso error.message
+            message: error.message || 'Error al registrar usuario'
           };
         }
       },
