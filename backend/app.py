@@ -17,7 +17,7 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app,
-     resources={r"/*": {"origins": "*"}},
+     resources={r"/*": {"origins": "https://planificador-semanal-omega.vercel.app"}},
      supports_credentials=False,
      allow_headers=["Content-Type", "Authorization"],
      expose_headers=["Content-Type", "Authorization"],
