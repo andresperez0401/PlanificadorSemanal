@@ -114,7 +114,7 @@ export default function TaskDetailModal({ isOpen, task, onClose, onDelete }) {
 
           <div className="task-description">
             <p className="description-content">
-              {task.description || "No hay descripción para esta tarea"}
+              {task.descripcion || "No hay descripción para esta tarea"}
             </p>
           </div>
 
