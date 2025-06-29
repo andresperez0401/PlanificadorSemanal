@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 sqlalchemy = "*"
 alembic = "*"
-flask-sqlalchemy = "*"
 jwt = "*"
 flask = "*"
 flask-migrate = "*"
@@ -16,6 +15,8 @@ flask-jwt-extended = "*"
 twilio = "*"
 openai = "*"
 gunicorn = "*"
+flask-sqlalchemy = "*"
+psycopg2-binary = "*"
 
 [dev-packages]
 
