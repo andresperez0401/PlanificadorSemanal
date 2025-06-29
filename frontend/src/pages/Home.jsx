@@ -74,7 +74,7 @@ export default function Home() {
 
     const savedTask = await actions.createTask({
       titulo: taskData.title,
-      descripcion: taskData.descripcion,
+      descripcion: taskData.description,
       fecha: taskData.date,
       horaInicio: taskData.startTime,
       horaFin: taskData.endTime,

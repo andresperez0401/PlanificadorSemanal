@@ -123,7 +123,7 @@ const getState = ({ getStore, getActions, setStore }) => {
         if (!token) return;
         
         try {
-          console.log("Obteniendo tareas del backend:", `${import.meta.env.VITE_BACKEND_URL}tareas`, "con token:", token);
+         // console.log("Obteniendo tareas del backend:", `${import.meta.env.VITE_BACKEND_URL}tareas`, "con token:", token);
           const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}tareas`, {
             method: 'GET',
             headers: {
@@ -136,7 +136,7 @@ const getState = ({ getStore, getActions, setStore }) => {
          
           const data = await response.json();
           
-          console.log("Respuesta del backend:", data.tareas);
+        //  console.log("Respuesta del backend:", data.tareas);
 
           if (!response.ok) {
             throw new Error(data.error);
@@ -161,6 +161,8 @@ const getState = ({ getStore, getActions, setStore }) => {
       createTask: async (taskData) => {
         const { token } = getStore();
         if (!token) return null;
+
+        console.log(taskData.descripcion);
         
         try {
           const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}tarea`, {

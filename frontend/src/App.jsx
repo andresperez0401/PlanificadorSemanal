@@ -16,12 +16,17 @@ const AppContent = () => {
   const location = useLocation();
   const { actions } = useContext(Context);
 
+  // AppContent.jsx
   useEffect(() => {
-    // Al montar el componente principal
-    const { success } = actions.restoreSession();
-    // 2) Si hay token, bajar tareas
-    if (success) actions.getTasks();
+    async function init() {
+      const loginResp = await actions.restoreSession();
+      if (loginResp.success) {
+        await actions.getTasks();
+      }
+    }
+    init();
   }, []);
+
 
   //Esto sirve para ocultar ciertas rutas y que no se muestre el footer por ejemplo
   const hideNavbar = ['/login', '/signup'].includes(location.pathname);
